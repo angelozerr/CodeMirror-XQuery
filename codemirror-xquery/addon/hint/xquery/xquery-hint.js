@@ -79,7 +79,11 @@
   function getVarLabel(varDecl) {
     var dataType = varDecl.dataType || varDecl.dataType || 'any';
     var name = varDecl.name;
-    return name + ' : ' + dataType;
+    var funcName= '';
+    if (varDecl.functionDecl) {
+      funcName = ' - ' + varDecl.functionDecl.name;
+    }
+    return name + ' : ' + dataType + funcName;
   }
 
   function populateVars(s, vars, completions) {

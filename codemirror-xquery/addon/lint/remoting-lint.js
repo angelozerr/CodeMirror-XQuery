@@ -32,7 +32,7 @@ CodeMirror.remotingValidator = function(cm, updateLinting, options) {
           data = data.annotations;
         }
 
-        if (data.length) {
+        if (data.length || data.length == 0) {
           for ( var i = 0; i < data.length; i++) {
             var error = data[i];
             addAnnotation(error, found);
@@ -44,7 +44,8 @@ CodeMirror.remotingValidator = function(cm, updateLinting, options) {
       updateLinting(cm, found);
     },
     error : function(jqXHR, textStatus, errorThrown) {
-      // alert(errorThrown);
+      updateLinting(cm, []);
+      //alert(errorThrown)
     }
   });
 

@@ -3,7 +3,8 @@
   z-index: 10;
   border : double rgb(212, 208, 200) 3px;
   max-height: 200px;
-  min-width: 200px;
+  max-width: 400px;
+  min-width: 400px;
   overflow: auto;
   background: white;
   font-family: Tahoma;

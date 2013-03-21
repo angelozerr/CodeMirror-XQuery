@@ -9,7 +9,8 @@ XQuery editor like :
 * [Completion](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion)
 * [Code Folding](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Folding)
 
-You can play with the [online demo](http://codemirror-java.opensagres.cloudbees.net/xquery.html).
+You can play with the XQuery [online demo](http://codemirror-java.opensagres.cloudbees.net/xquery.html) and see 
+the [XQuery Features](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Features).
 
 ![SyntaxError1](https://github.com/angelozerr/CodeMirror-XQuery/wiki/images/XQueryEditor.png)
 

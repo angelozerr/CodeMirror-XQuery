@@ -739,7 +739,7 @@ window.CodeMirror = (function() {
     // Move the hidden textarea near the cursor to prevent scrolling artifacts
     var headPos = cursorCoords(cm, cm.doc.sel.head, "div");
     var wrapOff = getRect(display.wrapper), lineOff = getRect(display.lineDiv);
-    display.inputDiv.style.top = Math.max(0, Math.min(display.wrapper.clientHeight - 10,
+    display.inputDiv.style.top = Math.max(0, Math.min(display.wrapper.clientHeight - 20,
                                                       headPos.top + lineOff.top - wrapOff.top)) + "px";
     display.inputDiv.style.left = Math.max(0, Math.min(display.wrapper.clientWidth - 10,
                                                        headPos.left + lineOff.left - wrapOff.left)) + "px";
@@ -1087,6 +1087,26 @@ window.CodeMirror = (function() {
     return rect;
   }
 
+  // Context may be "window", "page", "div", or "local"/null
+  // Result is in local coords
+  function fromCoordSystem(cm, coords, context) {
+    if (context == "div") return coords;
+    var left = coords.left, top = coords.top;
+    if (context == "page") {
+      left -= window.pageXOffset || (document.documentElement || document.body).scrollLeft;
+      top -= window.pageYOffset || (document.documentElement || document.body).scrollTop;
+    }
+    var lineSpaceBox = getRect(cm.display.lineSpace);
+    left -= lineSpaceBox.left;
+    top -= lineSpaceBox.top;
+    if (context == "local" || !context) {
+      var editorBox = getRect(cm.display.wrapper);
+      left -= editorBox.left;
+      top -= editorBox.top;
+    }
+    return {left: left, top: top};
+  }
+
   function charCoords(cm, pos, context, lineObj) {
     if (!lineObj) lineObj = getLine(cm.doc, pos.line);
     return intoCoordSystem(cm, lineObj, measureChar(cm, lineObj, pos.ch), context);
@@ -1390,7 +1410,7 @@ window.CodeMirror = (function() {
                         origin: cm.state.pasteIncoming ? "paste" : "+input"}, "end");
 
     cm.curOp.updateInput = updateInput;
-    if (text.length > 1000) input.value = cm.display.prevInput = "";
+    if (text.length > 1000 || text.indexOf("\n") > -1) input.value = cm.display.prevInput = "";
     else cm.display.prevInput = text;
     if (withOp) endOperation(cm);
     cm.state.pasteIncoming = false;
@@ -1905,8 +1925,8 @@ window.CodeMirror = (function() {
 
   function allKeyMaps(cm) {
     var maps = cm.state.keyMaps.slice(0);
+    if (cm.options.extraKeys) maps.push(cm.options.extraKeys);
     maps.push(cm.options.keyMap);
-    if (cm.options.extraKeys) maps.unshift(cm.options.extraKeys);
     return maps;
   }
 
@@ -2068,6 +2088,7 @@ window.CodeMirror = (function() {
   // UPDATING
 
   function changeEnd(change) {
+    if (!change.text) return change.to;
     return Pos(change.from.line + change.text.length - 1,
                lst(change.text).length + (change.text.length == 1 ? change.from.ch : 0));
   }
@@ -2177,6 +2198,8 @@ window.CodeMirror = (function() {
   }
 
   function makeChangeFromHistory(doc, type) {
+    if (doc.cm && doc.cm.state.suppressEdits) return;
+
     var hist = doc.history;
     var event = (type == "undo" ? hist.done : hist.undone).pop();
     if (!event) return;
@@ -2398,16 +2421,20 @@ window.CodeMirror = (function() {
     var dir = bias || 1;
     doc.cantEdit = false;
     search: for (;;) {
-      var line = getLine(doc, curPos.line), toClear;
+      var line = getLine(doc, curPos.line);
       if (line.markedSpans) {
         for (var i = 0; i < line.markedSpans.length; ++i) {
           var sp = line.markedSpans[i], m = sp.marker;
           if ((sp.from == null || (m.inclusiveLeft ? sp.from <= curPos.ch : sp.from < curPos.ch)) &&
               (sp.to == null || (m.inclusiveRight ? sp.to >= curPos.ch : sp.to > curPos.ch))) {
-            if (mayClear && m.clearOnEnter) {
-              (toClear || (toClear = [])).push(m);
-              continue;
-            } else if (!m.atomic) continue;
+            if (mayClear) {
+              signal(m, "beforeCursorEnter");
+              if (m.explicitlyCleared) {
+                if (!line.markedSpans) break;
+                else {--i; continue;}
+              }
+            }
+            if (!m.atomic) continue;
             var newPos = m.find()[dir < 0 ? "from" : "to"];
             if (posEq(newPos, curPos)) {
               newPos.ch += dir;
@@ -2434,7 +2461,6 @@ window.CodeMirror = (function() {
             continue search;
           }
         }
-        if (toClear) for (var i = 0; i < toClear.length; ++i) toClear[i].clear();
       }
       return curPos;
     }
@@ -2666,8 +2692,8 @@ window.CodeMirror = (function() {
     getOption: function(option) {return this.options[option];},
     getDoc: function() {return this.doc;},
 
-    addKeyMap: function(map) {
-      this.state.keyMaps.push(map);
+    addKeyMap: function(map, bottom) {
+      this.state.keyMaps[bottom ? "push" : "unshift"](map);
     },
     removeKeyMap: function(map) {
       var maps = this.state.keyMaps;
@@ -2749,11 +2775,9 @@ window.CodeMirror = (function() {
       return charCoords(this, clipPos(this.doc, pos), mode || "page");
     },
 
-    coordsChar: function(coords) {
-      var off = getRect(this.display.lineSpace);
-      var scrollY = window.pageYOffset || (document.documentElement || document.body).scrollTop;
-      var scrollX = window.pageXOffset || (document.documentElement || document.body).scrollLeft;
-      return coordsChar(this, coords.left - off.left - scrollX, coords.top - off.top - scrollY);
+    coordsChar: function(coords, mode) {
+      coords = fromCoordSystem(this, coords, mode || "page");
+      return coordsChar(this, coords.left, coords.top);
     },
 
     defaultTextHeight: function() { return textHeight(this.display); },
@@ -3192,6 +3216,14 @@ window.CodeMirror = (function() {
     goLineEnd: function(cm) {
       cm.extendSelection(lineEnd(cm, cm.getCursor().line));
     },
+    goLineRight: function(cm) {
+      var top = cm.charCoords(cm.getCursor(), "div").top + 5;
+      cm.extendSelection(cm.coordsChar({left: cm.display.lineDiv.offsetWidth + 100, top: top}, "div"));
+    },
+    goLineLeft: function(cm) {
+      var top = cm.charCoords(cm.getCursor(), "div").top + 5;
+      cm.extendSelection(cm.coordsChar({left: 0, top: top}, "div"));
+    },
     goLineUp: function(cm) {cm.moveV(-1, "line");},
     goLineDown: function(cm) {cm.moveV(1, "line");},
     goPageUp: function(cm) {cm.moveV(-1, "page");},
@@ -3306,6 +3338,7 @@ window.CodeMirror = (function() {
     return name == "Ctrl" || name == "Alt" || name == "Shift" || name == "Mod";
   }
   function keyName(event, noShift) {
+    if (opera && event.keyCode == 34 && event["char"]) return false;
     var name = keyNames[event.keyCode];
     if (name == null || event.altGraphKey) return false;
     if (event.altKey) name = "Alt-" + name;
@@ -3508,7 +3541,6 @@ window.CodeMirror = (function() {
             inclusiveLeft: this.inclusiveLeft, inclusiveRight: this.inclusiveRight,
             atomic: this.atomic,
             collapsed: this.collapsed,
-            clearOnEnter: this.clearOnEnter,
             replacedWith: copyWidget ? repl && repl.cloneNode(true) : repl,
             readOnly: this.readOnly,
             startStyle: this.startStyle, endStyle: this.endStyle};
@@ -3543,6 +3575,10 @@ window.CodeMirror = (function() {
     }
     if (marker.collapsed) sawCollapsedSpans = true;
 
+    if (marker.addToHistory)
+      addToHistory(doc, {from: from, to: to, origin: "markText"},
+                   {head: doc.sel.head, anchor: doc.sel.anchor}, NaN);
+
     var curLine = from.line, size = 0, collapsedAtStart, collapsedAtEnd, cm = doc.cm, updateMaxLine;
     doc.iter(curLine, to.line + 1, function(line) {
       if (cm && marker.collapsed && !cm.options.lineWrapping && visualLine(doc, line) == cm.display.maxLine)
@@ -3562,6 +3598,8 @@ window.CodeMirror = (function() {
     if (marker.collapsed) doc.iter(from.line, to.line + 1, function(line) {
       if (lineIsHidden(doc, line)) updateLineHeight(line, 0);
     });
+
+    if (marker.clearOnEnter) on(marker, "beforeCursorEnter", function() { marker.clear(); });
 
     if (marker.readOnly) {
       sawReadOnlySpans = true;
@@ -4032,6 +4070,8 @@ window.CodeMirror = (function() {
       builder.measure = line == realLine && measure;
       builder.pos = 0;
       builder.addToken = builder.measure ? buildTokenMeasure : buildToken;
+      if ((ie || webkit) && cm.getOption("lineWrapping"))
+        builder.addToken = buildTokenSplitSpaces(builder.addToken);
       if (measure && sawBefore && line != realLine && !builder.addedOne) {
         measure[0] = builder.pre.appendChild(zeroWidthElement(cm.display.measure));
         builder.addedOne = true;
@@ -4130,6 +4170,18 @@ window.CodeMirror = (function() {
       builder.pos += ch.length;
     }
     if (text.length) builder.addedOne = true;
+  }
+
+  function buildTokenSplitSpaces(inner) {
+    function split(old) {
+      var out = " ";
+      for (var i = 0; i < old.length - 2; ++i) out += i % 2 ? " " : "\u00a0";
+      out += " ";
+      return out;
+    }
+    return function(builder, text, style, startStyle, endStyle) {
+      return inner(builder, text.replace(/ {3,}/, split), style, startStyle, endStyle);
+    };
   }
 
   function buildCollapsedSpan(builder, size, widget) {
@@ -4442,8 +4494,8 @@ window.CodeMirror = (function() {
         replaceRange(this, text, Pos(line, 0), clipPos(this, Pos(line)));
     },
     removeLine: function(line) {
-      if (isLine(this, line))
-        replaceRange(this, "", Pos(line, 0), clipPos(this, Pos(line + 1, 0)));
+      if (line) replaceRange(this, "", clipPos(this, Pos(line - 1)), clipPos(this, Pos(line)));
+      else replaceRange(this, "", Pos(0, 0), clipPos(this, Pos(1, 0)));
     },
 
     getLineHandle: function(line) {if (isLine(this, line)) return getLine(this, line);},
@@ -5090,9 +5142,8 @@ window.CodeMirror = (function() {
   }
 
   function removeChildren(e) {
-    // IE will break all parent-child relations in subnodes when setting innerHTML
-    if (!ie) e.innerHTML = "";
-    else while (e.firstChild) e.removeChild(e.firstChild);
+    for (var count = e.childNodes.length; count > 0; --count)
+      e.removeChild(e.firstChild);
     return e;
   }
 
@@ -5463,7 +5514,7 @@ window.CodeMirror = (function() {
 
   // THE END
 
-  CodeMirror.version = "3.1 +";
+  CodeMirror.version = "3.11 +";
 
   return CodeMirror;
 })();

@@ -2,7 +2,7 @@ CodeMirror-XQuery
 =================
 
 [CodeMirror](https://github.com/marijnh/CodeMirror) is JavaScript component that provides a code editor in the browser. **CodeMirror-XQuery** is an extension of CodeMirror to provide usefull features for 
-XQuery editor : 
+XQuery editor like : 
 
 * [Syntax coloring](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Syntax-Coloring)
 * [Syntax errors](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Syntax-Errors)

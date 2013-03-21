@@ -28,6 +28,6 @@ CodeMirror.commentRangeFinder = function(cm, start, startComment, endComment) {
     }
   }
   if (end == null || end == line + 1) return;
-  return {from: CodeMirror.Pos(line, startChar + 1),
+  return {from: CodeMirror.Pos(line, lineText.length),
           to: CodeMirror.Pos(end, endCh)};
 };

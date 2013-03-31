@@ -11,12 +11,16 @@
 
   var moduleNamespaces = [];
   var modules = [];
+  var modulesNoNeedsPrefix = [];
 
   function defineXQueryModule(module) {
     if (module && module.namespace) {
       if (module.prefix) {
         defaultModulePrefixes.push(module.prefix);
         defaultModules[module.prefix] = module;
+        if (module.prefixRequired == false) {
+          modulesNoNeedsPrefix.push(module);
+        }
       } else {
         moduleNamespaces.push(module.namespace);
         modules[module.namespace] = module;
@@ -278,7 +282,10 @@
   }
 
   function populateModuleFunction(prefix, f, completions) {
-    var label = prefix + ':' + f.name;
+    var label = f.name;
+    if (prefix != null) {
+      label = prefix + ':' + label;
+    }
     label += '(';
     var params = f.params;
     if (params) {
@@ -304,7 +311,10 @@
     };
     completion.hint = function(cm, data, completion) {
       var firstParam = null;
-      var name = prefix + ':' + completion.moduleFunction.name;
+      var name = completion.moduleFunction.name;
+      if (prefix != null) {
+        name = prefix + ':' + name;
+      }
       var label = name;
       label += '(';
       var params = completion.moduleFunction.params;
@@ -351,6 +361,12 @@
       var prefix = defaultModulePrefixes[i];
       var module = defaultModules[prefix];
       populateModulePrefix(s, module, completions);
+    }
+  }
+  
+  function populateModuleFunctionsNoNeedsPrefix(s, completions) {
+    for ( var i = 0; i < modulesNoNeedsPrefix.length; i++) {
+      populateModuleFunctions(modulesNoNeedsPrefix[i], null, s, completions)
     }
   }
 
@@ -501,6 +517,14 @@
 
       // default module
       populateDefaultModulePrefix(s, completions);
+      
+      // populate functions of modules which no needs prefix(ex: fn)
+      populateModuleFunctionsNoNeedsPrefix(s, completions);
+      
+      // templates
+      if (CodeMirror.templatesHint) {
+        CodeMirror.templatesHint.getCompletions(editor, completions, s);
+      }
     }
     return getCompletions(completions, cur, token, options, showHint)
   }

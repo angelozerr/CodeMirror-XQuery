@@ -1,7 +1,7 @@
 (function() {
   var templatesMap = [];
   var Pos = CodeMirror.Pos;
-  
+
   function startsWith(str, token) {
     return str.slice(0, token.length).toUpperCase() == token.toUpperCase();
   }
@@ -25,14 +25,47 @@
       this.varIndex = -1;
     }
 
-    function onChange() {
+    function getMarkerChanged(cm, textChanged) {
+      var markers = cm.findMarksAt(textChanged.from);
+      if (markers) {
+        for ( var i = 0; i < markers.length; i++) {
+          var marker = markers[i];
+          if (marker._templateVar) {
+            return marker;
+          }
+        }
+      }
+      return null;
+    }
+
+    function onChange(cm, textChanged) {
       var state = cm._templateState;
-      if (state.marked.length > 0) {
-        
+      if (state.updating) {
+        return;
+      }
+      try {
+        state.updating = true;
+        var markerChanged = getMarkerChanged(cm, textChanged);
+        if (markerChanged == null) {
+          uninstall(cm);
+        } else {
+          var posChanged = markerChanged.find();
+          var newContent = cm.getRange(posChanged.from, posChanged.to);
+          for ( var i = 0; i < state.marked.length; i++) {
+            var marker = state.marked[i];
+            if (marker != markerChanged
+                && marker._templateVar == markerChanged._templateVar) {
+              var pos = marker.find();
+              cm.replaceRange(newContent, pos.from, pos.to);
+            }
+          }
+        }
+      } finally {
+        state.updating = false;
       }
     }
 
-    function selectNextVariable() {
+    function selectNextVariable(cm) {
       var state = cm._templateState;
       if (state.marked.length > 0) {
         state.varIndex++;
@@ -124,13 +157,13 @@
         if (token.variable) {
           if (!isSpecialVar(token.variable)) {
             content += token.variable;
-            var from = Pos(data.line + line, data.token.start
-                + token.x);
-            var to = Pos(data.line + line, data.token.start
-                + token.x + token.variable.length);
+            var from = Pos(data.line + line, data.token.start + token.x);
+            var to = Pos(data.line + line, data.token.start + token.x
+                + token.variable.length);
             markers.push({
               from : from,
-              to : to
+              to : to,
+              variable : token.variable
             });
           }
         } else {
@@ -152,21 +185,22 @@
           startStyle : "CodeMirror-templates-variable-start",
           endStyle : "CodeMirror-templates-variable-end",
           inclusiveLeft : true,
-          inclusiveRight : true
+          inclusiveRight : true,
+          _templateVar : marker.variable
         }));
       }
-      selectNextVariable();
+      selectNextVariable(cm);
 
       cm.on("change", onChange);
       cm.addKeyMap(ourMap);
 
     }
 
-    function uninstall() {
+    function uninstall(cm) {
       var state = cm._templateState;
       for ( var i = 0; i < state.marked.length; i++) {
-        state.marked[i].clear();        
-      } 
+        state.marked[i].clear();
+      }
       state.marked.length = 0;
       cm.off("change", onChange);
       cm.removeKeyMap(ourMap);

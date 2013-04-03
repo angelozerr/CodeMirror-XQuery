@@ -40,7 +40,7 @@
 
     function onChange(cm, textChanged) {
       var state = cm._templateState;
-      if (state.updating) {
+      if (!textChanged.origin || state.updating) {
         return;
       }
       try {

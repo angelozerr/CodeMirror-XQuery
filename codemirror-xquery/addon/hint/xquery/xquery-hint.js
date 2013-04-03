@@ -60,7 +60,7 @@
   // --------------- string utils ---------------------
 
   function startsWithString(str, token) {
-    return str.slice(0, token.length) == token;
+    return str.slice(0, token.length).toUpperCase() == token.toUpperCase();
   }
 
   function trim(str) {
@@ -83,7 +83,7 @@
   function getVarLabel(varDecl) {
     var dataType = varDecl.dataType || varDecl.dataType || 'any';
     var name = varDecl.name;
-    var funcName= '';
+    var funcName = '';
     if (varDecl.functionDecl) {
       funcName = ' - ' + varDecl.functionDecl.name;
     }
@@ -194,7 +194,7 @@
     }
   }
 
-  // --------------- populate imported modules funtions ---------------------
+  // --------------- populate imported modules functions ---------------------
 
   function populateImportedModules(s, importedModules, completions) {
     if (importedModules) {
@@ -246,10 +246,11 @@
       populateNamespace(s, module, completions);
     }
     // TODO : manage dynamicly the add module
-    /*if (options && options.populateModuleNamespaces) {
-      options.populateModuleNamespaces(populateNamespace, s, completions,
-          editor, options);
-    }*/
+    /*
+     * if (options && options.populateModuleNamespaces) {
+     * options.populateModuleNamespaces(populateNamespace, s, completions,
+     * editor, options); }
+     */
   }
 
   function populateNamespace(s, module, completions) {
@@ -268,11 +269,12 @@
           if (location) {
             var quote = data.token.string.charAt(0);
             label += quote + ' at ' + quote + location + quote + ';';
-            var length = cm.getLine(cm.getCursor().line).length
-            to = Pos(data.line, length);
           } else {
-            to = Pos(data.line, data.token.end - 1);
+            var quote = data.token.string.charAt(0);
+            label = label + quote + ';';
           }
+          var length = cm.getLine(cm.getCursor().line).length;
+          to = Pos(data.line, length);
           cm.replaceRange(label, from, to);
         };
         module.completion = completion;
@@ -363,7 +365,7 @@
       populateModulePrefix(s, module, completions);
     }
   }
-  
+
   function populateModuleFunctionsNoNeedsPrefix(s, completions) {
     for ( var i = 0; i < modulesNoNeedsPrefix.length; i++) {
       populateModuleFunctions(modulesNoNeedsPrefix[i], null, s, completions)
@@ -410,8 +412,16 @@
     // Find the token at the cursor
     var cur = editor.getCursor(), token = getToken(editor, cur), tprop = token;
     switch (tprop.type) {
+    case "keyword":
+      var s = getStartsWith(cur, token);
+      // templates
+      if (CodeMirror.templatesHint) {
+        CodeMirror.templatesHint.getCompletions(editor, completions, s);
+      }
+      break;
     case "string":
-      // completion started inside a string, test if it's import/declaration of module
+      // completion started inside a string, test if it's import/declaration of
+      // module
       if (tprop.state.tokenModuleParsing) {
         var s = getStartsWith(cur, token, 1);
         populateModuleNamespaces(s, completions, editor, options);
@@ -517,10 +527,10 @@
 
       // default module
       populateDefaultModulePrefix(s, completions);
-      
+
       // populate functions of modules which no needs prefix(ex: fn)
       populateModuleFunctionsNoNeedsPrefix(s, completions);
-      
+
       // templates
       if (CodeMirror.templatesHint) {
         CodeMirror.templatesHint.getCompletions(editor, completions, s);

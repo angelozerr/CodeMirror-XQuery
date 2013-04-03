@@ -7,34 +7,29 @@
     <!-- CodeMirror -->
     <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
     <script src="../../codemirror/lib/codemirror.js"></script>
+    <script src="../../codemirror/addon/hint/show-hint.js"></script>
     <link rel="stylesheet" href="../../codemirror/doc/docs.css">
     <link rel="stylesheet" href="../../codemirror/theme/xq-light.css">
-    <script src="../../codemirror/addon/edit/closebrackets.js"></script>    
-    <script src="../../codemirror/addon/edit/matchbrackets.js"></script>
-    <script src="../../codemirror/addon/hint/show-hint.js"></script>
-    <script src="../../codemirror/addon/selection/active-line.js"></script>
-	<script src="../../codemirror/addon/fold/brace-fold.js"></script>  
-	<script src="../../codemirror/addon/fold/xml-fold.js"></script>
-	    
+
     <!-- CodeMirror-XQuery -->        
     <script src="../addon/hint/xquery/xquery-hint.js"></script>
     <link rel="stylesheet" href="../addon/hint/show-hint-eclipse.css">    
-    <link rel="stylesheet" href="../addon/hint/xquery/xquery-hint.css">
-    <script src="../addon/hint/xquery/system-functions.xml.js"></script>
-    <script src="../addon/hint/templates-hint.js"></script>
-	<script src="../addon/hint/xquery/xquery-templates.js"></script>
-    
-    <script src="../addon/fold/comment-fold.js"></script>            
-	<script src="../addon/fold/autofolding.js"></script>
-	<script src="../addon/fold/autofolding-xquery.js"></script>
-	<link rel="stylesheet" href="../addon/fold/autofolding.css">	  
-    
+    <link rel="stylesheet" href="../addon/hint/xquery/xquery-hint.css">   
     <script src="../mode/xquery/xquery.js"></script>
+	
+	<script src="../addon/hint/templates-hint.js"></script>
+	<script src="../addon/hint/xquery/xquery-templates.js"></script>
 
     <style type="text/css">
       .CodeMirror {
         height:500px;
       }
+      
+      .CodeMirror-templates-variable {
+      	border: solid gray 1px;
+      }
+      
+      
     </style>    
   </head>
   <body>
@@ -278,20 +273,13 @@ how it works.</p>
         CodeMirror.showHint(cm, CodeMirror.xqueryHint);
       }
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-		lineNumbers: true,
-        theme: "xq-light",
-        styleActiveLine: true,
         lineNumbers: true,
-        lineWrapping: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-folding-markers"],       
+        theme: "xq-light",
         extraKeys: {
             "':'": passAndHint,
             "'$'": passAndHint,
             "Ctrl-Space": "autocomplete"
-        },
-        foldingWith: CodeMirror.xqueryFolding        
+        }
       });
     </script>
   </body>

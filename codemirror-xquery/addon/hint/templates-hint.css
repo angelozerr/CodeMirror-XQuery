@@ -1,0 +1,12 @@
+.CodeMirror-templates-variable {
+  border-bottom: solid gray 1px;
+  border-top: solid gray 1px;
+}
+      
+.CodeMirror-templates-variable-start {
+  border-left: solid gray 1px;
+}
+
+.CodeMirror-templates-variable-end {
+  border-right: solid gray 1px;
+}

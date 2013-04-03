@@ -26,19 +26,22 @@
     }
 
     function onChange() {
-
+      var state = cm._templateState;
+      if (state.marked.length > 0) {
+        
+      }
     }
 
     function selectNextVariable() {
-      var templateState = cm._templateState;
-      if (templateState.marked.length > 0) {
-        templateState.varIndex++;
-        if (templateState.varIndex >= templateState.marked.length) {
-          templateState.varIndex = 0;
+      var state = cm._templateState;
+      if (state.marked.length > 0) {
+        state.varIndex++;
+        if (state.varIndex >= state.marked.length) {
+          state.varIndex = 0;
         }
-        var markText = templateState.marked[templateState.varIndex];
+        var markText = state.marked[state.varIndex];
         var pos = markText.find();
-        cm.setSelection(pos.from, Pos(pos.from.line, pos.from.ch +2));
+        cm.setSelection(pos.from, pos.to);
       }
     }
 
@@ -108,8 +111,8 @@
 
     function install(cm, data, completion) {
 
-      var templateState = new TemplateState();
-      cm._templateState = templateState;
+      var state = new TemplateState();
+      cm._templateState = state;
 
       var template = completion.template;
       var tokens = parseTemplate(template);
@@ -144,8 +147,12 @@
 
       for ( var i = 0; i < markers.length; i++) {
         var marker = markers[i], from = marker.from, to = marker.to;
-        templateState.marked.push(cm.markText(from, to, {
-          className : "CodeMirror-templates-variable"
+        state.marked.push(cm.markText(from, to, {
+          className : "CodeMirror-templates-variable",
+          startStyle : "CodeMirror-templates-variable-start",
+          endStyle : "CodeMirror-templates-variable-end",
+          inclusiveLeft : true,
+          inclusiveRight : true
         }));
       }
       selectNextVariable();
@@ -156,10 +163,11 @@
     }
 
     function uninstall() {
-      var templateState = cm._templateState;
-      for ( var i = 0; i < templateState.marked.length; i++) {
-        templateState.marked[i].clear();        
+      var state = cm._templateState;
+      for ( var i = 0; i < state.marked.length; i++) {
+        state.marked[i].clear();        
       } 
+      state.marked.length = 0;
       cm.off("change", onChange);
       cm.removeKeyMap(ourMap);
       delete cm._templateState;

@@ -22,6 +22,7 @@
 
     function TemplateState() {
       this.marked = [];
+      this.selectableMarkers = [];
       this.varIndex = -1;
     }
 
@@ -40,7 +41,7 @@
 
     function onChange(cm, textChanged) {
       var state = cm._templateState;
-      if (!textChanged.origin || state.updating) {
+      if (!textChanged.origin || !state || state.updating) {
         return;
       }
       try {
@@ -67,14 +68,34 @@
 
     function selectNextVariable(cm) {
       var state = cm._templateState;
-      if (state.marked.length > 0) {
+      if (state.selectableMarkers.length > 0) {
         state.varIndex++;
-        if (state.varIndex >= state.marked.length) {
+        if (state.varIndex >= state.selectableMarkers.length) {
           state.varIndex = 0;
         }
-        var markText = state.marked[state.varIndex];
-        var pos = markText.find();
+        var marker = state.selectableMarkers[state.varIndex];
+        var pos = marker.find();
         cm.setSelection(pos.from, pos.to);
+        var templateVar = marker._templateVar;
+        for ( var i = 0; i < state.marked.length; i++) {
+          var m = state.marked[i];
+          if (m == marker) {
+            m.className = "";
+            m.startStyle = "";
+            m.endStyle = "";
+          } else {
+            if (m._templateVar == marker._templateVar) {
+              m.className = "CodeMirror-templates-variable-selected";
+              m.startStyle = "";
+              m.endStyle = "";
+            } else {
+              m.className = "CodeMirror-templates-variable";
+              m.startStyle = "CodeMirror-templates-variable-start";
+              m.endStyle = "CodeMirror-templates-variable-end";
+            }
+          }
+        }
+        cm.refresh();
       }
     }
 
@@ -143,7 +164,9 @@
     }
 
     function install(cm, data, completion) {
-
+      if (cm._templateState) {
+        uninstall(cm);
+      }
       var state = new TemplateState();
       cm._templateState = state;
 
@@ -152,6 +175,7 @@
       var content = '';
       var line = 0;
       var markers = [];
+      var variables = [];
       for ( var i = 0; i < tokens.length; i++) {
         var token = tokens[i];
         if (token.variable) {
@@ -160,11 +184,14 @@
             var from = Pos(data.from.line + line, data.from.ch + token.x);
             var to = Pos(data.from.line + line, data.from.ch + token.x
                 + token.variable.length);
+            var selectable = variables[token.variable] != false ;
             markers.push({
               from : from,
               to : to,
-              variable : token.variable
+              variable : token.variable,
+              selectable : selectable
             });
+            variables[token.variable] = false;
           }
         } else {
           content += token;
@@ -180,14 +207,18 @@
 
       for ( var i = 0; i < markers.length; i++) {
         var marker = markers[i], from = marker.from, to = marker.to;
-        state.marked.push(cm.markText(from, to, {
+        var markText = cm.markText(from, to, {
           className : "CodeMirror-templates-variable",
           startStyle : "CodeMirror-templates-variable-start",
           endStyle : "CodeMirror-templates-variable-end",
           inclusiveLeft : true,
           inclusiveRight : true,
           _templateVar : marker.variable
-        }));
+        });
+        state.marked.push(markText);
+        if (marker.selectable == true) {
+          state.selectableMarkers.push(markText);
+        }
       }
       selectNextVariable(cm);
 
@@ -202,6 +233,7 @@
         state.marked[i].clear();
       }
       state.marked.length = 0;
+      state.selectableMarkers.length = 0;
       cm.off("change", onChange);
       cm.removeKeyMap(ourMap);
       delete cm._templateState;
@@ -219,7 +251,7 @@
             if (template.description) {
               label += '- ' + template.description;
             }
-            var className = "CodeMirror-template";
+            var className = "CodeMirror-hint-template";
             if (template.className)
               className = template.className;
             var completion = {

@@ -103,8 +103,8 @@
             "varDecl" : varDecl
           };
           completion.hint = function(cm, data, completion) {
-            var from = Pos(data.line, data.token.start);
-            var to = Pos(data.line, data.token.end);
+            var from = Pos(data.from.line, data.from.ch);
+            var to = Pos(data.to.line, data.to.ch);
             cm.replaceRange(completion.varDecl.name, from, to);
           };
           varDecl.completion = completion;
@@ -174,15 +174,15 @@
               content += p;
               content += ')';
 
-              var from = Pos(data.line, data.token.start);
-              var to = Pos(data.line, data.token.end);
+              var from = Pos(data.from.line, data.from.ch);
+              var to = Pos(data.to.line, data.to.ch);
               cm.replaceRange(content, from, to);
-              cm.setCursor(Pos(data.line, data.token.start + name.length + 1));
+              cm.setCursor(Pos(data.from.line, data.from.ch + name.length + 1));
               if (firstParam != null) {
                 // the function to insert has parameters, select the first
                 // parameter.
-                cm.setSelection(Pos(data.line, data.token.start + name.length
-                    + 1), Pos(data.line, data.token.start + name.length + 1
+                cm.setSelection(Pos(data.from.line, data.from.ch + name.length
+                    + 1), Pos(data.to.line, data.from.ch + name.length + 1
                     + firstParam.length));
               }
             };
@@ -216,8 +216,8 @@
           "importedModule" : importedModule
         };
         completion.hint = function(cm, data, completion) {
-          var from = Pos(data.line, data.token.start);
-          var to = Pos(data.line, data.token.end);
+          var from = Pos(data.from.line, data.from.ch);
+          var to = Pos(data.from.line, data.to.ch);
           cm.replaceRange(importedModule.prefix, from, to);
         };
         importedModule.completion = completion;
@@ -239,11 +239,11 @@
     return null;
   }
 
-  function populateModuleNamespaces(s, completions, editor, options) {
+  function populateModuleNamespaces(s, quote, completions, editor, options) {
     for ( var i = 0; i < moduleNamespaces.length; i++) {
       var namespace = moduleNamespaces[i];
       var module = modules[namespace];
-      populateNamespace(s, module, completions);
+      populateNamespace(s, quote, module, completions);
     }
     // TODO : manage dynamicly the add module
     /*
@@ -253,7 +253,7 @@
      */
   }
 
-  function populateNamespace(s, module, completions) {
+  function populateNamespace(s, quote, module, completions) {
     if (startsWithString(module.namespace, s)) {
       var completion = module.completion;
       if (!completion) {
@@ -264,17 +264,15 @@
         };
         completion.hint = function(cm, data, completion) {
           var label = completion.module.namespace;
-          var from = Pos(data.line, data.token.start + 1), to = null;
+          var from = Pos(data.from.line, data.from.ch + 1), to = null;
           var location = completion.module.location;
-          if (location) {
-            var quote = data.token.string.charAt(0);
+          if (location) {            
             label += quote + ' at ' + quote + location + quote + ';';
           } else {
-            var quote = data.token.string.charAt(0);
             label = label + quote + ';';
           }
           var length = cm.getLine(cm.getCursor().line).length;
-          to = Pos(data.line, length);
+          to = Pos(data.from.line, length);
           cm.replaceRange(label, from, to);
         };
         module.completion = completion;
@@ -333,13 +331,13 @@
         }
       }
       label += ')';
-      var from = Pos(data.line, data.token.start);
-      var to = Pos(data.line, data.token.end);
+      var from = Pos(data.from.line, data.from.ch);
+      var to = Pos(data.from.line, data.to.ch);
       cm.replaceRange(label, from, to);
-      cm.setCursor(Pos(data.line, data.token.start + name.length + 1));
+      cm.setCursor(Pos(data.from.line, data.from.ch + name.length + 1));
       if (firstParam != null) {
-        cm.setSelection(Pos(data.line, data.token.start + name.length + 1),
-            Pos(data.line, data.token.start + name.length + 1
+        cm.setSelection(Pos(data.from.line, data.from.ch + name.length + 1),
+            Pos(data.from.line, data.from.ch + name.length + 1
                 + firstParam.length));
       }
     };
@@ -388,9 +386,7 @@
     var data = {
       list : sortedCompletions,
       from : Pos(cur.line, token.start),
-      to : Pos(cur.line, token.end),
-      line : cur.line,
-      token : token
+      to : Pos(cur.line, token.end)
     };
 
     if (options && options.async) {
@@ -424,7 +420,8 @@
       // module
       if (tprop.state.tokenModuleParsing) {
         var s = getStartsWith(cur, token, 1);
-        populateModuleNamespaces(s, completions, editor, options);
+        var quote = token.string.charAt(0);
+        populateModuleNamespaces(s, quote, completions, editor, options);
       }
       break;
     case "variable def":

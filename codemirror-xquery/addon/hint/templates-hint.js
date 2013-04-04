@@ -157,8 +157,8 @@
         if (token.variable) {
           if (!isSpecialVar(token.variable)) {
             content += token.variable;
-            var from = Pos(data.line + line, data.token.start + token.x);
-            var to = Pos(data.line + line, data.token.start + token.x
+            var from = Pos(data.from.line + line, data.from.ch + token.x);
+            var to = Pos(data.from.line + line, data.from.ch + token.x
                 + token.variable.length);
             markers.push({
               from : from,
@@ -174,8 +174,8 @@
         }
       }
 
-      var from = Pos(data.line, data.token.start);
-      var to = Pos(data.line, data.token.end);
+      var from = data.from;
+      var to = data.to;
       cm.replaceRange(content, from, to);
 
       for ( var i = 0; i < markers.length; i++) {

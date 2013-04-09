@@ -184,7 +184,7 @@
             var from = Pos(data.from.line + line, data.from.ch + token.x);
             var to = Pos(data.from.line + line, data.from.ch + token.x
                 + token.variable.length);
-            var selectable = variables[token.variable] != false ;
+            var selectable = variables[token.variable] != false;
             markers.push({
               from : from,
               to : to,
@@ -261,6 +261,30 @@
             };
             completion.hint = function(cm, data, completion) {
               install(cm, data, completion);
+            };
+            completion.info = function(completion) {
+              var content = '';
+              var tokens = parseTemplate(completion.template);
+              for ( var i = 0; i < tokens.length; i++) {
+                var token = tokens[i];
+                if (token.variable) {
+                  if (!isSpecialVar(token.variable)) {
+                    content += token.variable;
+                  }
+                } else {
+                  content += token;
+                }
+              }
+
+              if (CodeMirror.runMode) {
+                var result = document.createElement('div');
+                result.className = 'cm-s-default';
+                if (cm.options && cm.options.theme)
+                  result.className = 'cm-s-' + cm.options.theme;
+                CodeMirror.runMode(content, cm.getMode().name, result);
+                return result;
+              }
+              return content
             };
             completions.push(completion);
           }

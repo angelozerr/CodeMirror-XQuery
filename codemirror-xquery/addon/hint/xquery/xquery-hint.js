@@ -341,6 +341,9 @@
                 + firstParam.length));
       }
     };
+    completion.info = function(completion) {
+      return completion.moduleFunction.info;
+    };
     completions.push(completion);
   }
 
@@ -388,7 +391,10 @@
       from : Pos(cur.line, token.start),
       to : Pos(cur.line, token.end)
     };
-
+    if (CodeMirror.attachContextInfo) {
+      // if context info is available, attach it
+      CodeMirror.attachContextInfo(data);
+    }
     if (options && options.async) {
       showHint(data);
     } else {

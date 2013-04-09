@@ -29,6 +29,7 @@ CodeMirror.showHint = function(cm, getHints, options) {
     // When there is only one completion, use it directly.
     if (!continued && options.completeSingle !== false && completions.length == 1) {
       pickCompletion(cm, data, completions[0]);
+      if (data.onClose) data.onClose();
       return true;
     }
 
@@ -85,13 +86,14 @@ CodeMirror.showHint = function(cm, getHints, options) {
         hints.scrollTop = node.offsetTop - 3;
       else if (node.offsetTop + node.offsetHeight > hints.scrollTop + hints.clientHeight)
         hints.scrollTop = node.offsetTop + node.offsetHeight - hints.clientHeight + 3;
+      if (data.onSelect) data.onSelect(completions[selectedHint], node);
     }
 
     function screenAmount() {
       return Math.floor(hints.clientHeight / hints.firstChild.offsetHeight) || 1;
     }
 
-    var ourMap = {
+    var ourMap, baseMap = {
       Up: function() {changeActive(selectedHint - 1);},
       Down: function() {changeActive(selectedHint + 1);},
       PageUp: function() {changeActive(selectedHint - screenAmount());},
@@ -102,11 +104,14 @@ CodeMirror.showHint = function(cm, getHints, options) {
       Tab: pick,
       Esc: close
     };
-    if (options.customKeys) for (var key in options.customKeys) if (options.customKeys.hasOwnProperty(key)) {
-      var val = options.customKeys[key];
-      if (/^(Up|Down|Enter|Esc)$/.test(key)) val = ourMap[val];
-      ourMap[key] = val;
-    }
+    if (options.customKeys) {
+      ourMap = {};
+      for (var key in options.customKeys) if (options.customKeys.hasOwnProperty(key)) {
+        var val = options.customKeys[key];
+        if (baseMap.hasOwnProperty(val)) val = baseMap[val];
+        ourMap[key] = val;
+      }
+    } else ourMap = baseMap;
 
     cm.addKeyMap(ourMap);
     cm.on("cursorActivity", cursorActivity);
@@ -138,7 +143,7 @@ CodeMirror.showHint = function(cm, getHints, options) {
     });
 
     var done = false, once;
-    function close() {
+    function close(willContinue) {
       if (done) return;
       done = true;
       clearTimeout(once);
@@ -148,6 +153,7 @@ CodeMirror.showHint = function(cm, getHints, options) {
       cm.off("blur", onBlur);
       cm.off("focus", onFocus);
       cm.off("scroll", onScroll);
+      if (willContinue !== true && data.onClose) data.onClose();
     }
     function pick() {
       pickCompletion(cm, data, completions[selectedHint]);
@@ -163,8 +169,9 @@ CodeMirror.showHint = function(cm, getHints, options) {
           (pos.ch && closeOn.test(line.charAt(pos.ch - 1))))
         close();
       else
-        once = setTimeout(function(){close(); continued = true; startHinting();}, 70);
+        once = setTimeout(function(){close(true); continued = true; startHinting();}, 70);
     }
+    if (data.onSelect) data.onSelect(completions[0], hints.firstChild);
     return true;
   }
 

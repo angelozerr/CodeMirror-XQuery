@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CodeMirror: Spring Bean</title>
+    <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
+    <script src="../../codemirror/lib/codemirror.js"></script>
+    <script src="../../codemirror/addon/hint/show-hint.js"></script>
+    <script src="../../codemirror/addon/edit/closetag.js"></script>
+    <script src="../../codemirror/mode/xml/xml.js"></script>
+    <script src="../../codemirror/mode/javascript/javascript.js"></script>
+    <script src="../../codemirror/mode/css/css.js"></script>
+    <script src="../../codemirror/mode/htmlmixed/htmlmixed.js"></script>
+
+	<link rel="stylesheet" href="../addon/hint/show-hint-eclipse.css">
+    <script src="../addon/hint/show-context-info.js"></script>
+    <link rel="stylesheet" href="../addon/hint/show-context-info.css">    
+    <script src="../addon/hint/xml/xml-hint.js"></script>
+	<link rel="stylesheet" href="../addon/hint/xml/xml-hint.css">
+	<script src="../addon/hint/xml/spring-hint.js"></script>
+        
+    <link rel="stylesheet" href="../../codemirror/doc/docs.css">
+    <style type="text/css">
+      .CodeMirror {border-top: 1px solid #888; border-bottom: 1px solid #888;}      
+    </style>
+  </head>
+  <body>
+    
+    <h1>Spring Bean code completation demo</h1>
+    <ul>
+      <li>Type an XML spring tag. If you press Ctrl+Space a hint panel show the code suggest. You can type to autocomplete tags, attributes if your cursor are inner a tag or attribute values if your cursor are inner a attribute value.</li>
+    </ul>
+
+    <form><textarea id="code" name="code">
+<bean id="testBean" class="org.springframework.beans.TestBean" scope="prototype">
+  <property name="age" value="10"/>
+  <property name="spouse">
+    <bean class="org.springframework.beans.TestBean">
+      <property name="age" value="11"/>
+    </bean>
+  </property>
+</bean>
+</textarea></form>
+    <script type="text/javascript">
+      CodeMirror.commands.autocomplete = function(cm) {
+        CodeMirror.showHint(cm, CodeMirror.springHint);
+      }
+        
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        mode: 'text/html',
+        autoCloseTags: true,
+        extraKeys: {"Ctrl-Space": "autocomplete"}
+      });
+    </script>
+  </body>
+</html>

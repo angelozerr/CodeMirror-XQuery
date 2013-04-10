@@ -3,7 +3,7 @@
   var contextInfo = null;
 
   CodeMirror.attachContextInfo = function(data) {
-    data.onSelect = function(completion, hints) {
+    data.onSelect = function(completion, hints) {      
       hints = hints.parentNode;
       var information = null;
       if (completion.info) {
@@ -16,6 +16,7 @@
           contextInfo.className = 'CodeMirror-hints-contextInfo'
           document.body.appendChild(contextInfo);
         }
+        contextInfo.innerHTML = '';
         contextInfo.style.top = hints.style.top;
         contextInfo.style.left = box.right + 'px';
         if(typeof information == "string") {

@@ -342,7 +342,7 @@
       }
     };
     completion.info = function(completion) {
-      return completion.moduleFunction.info;
+      return completion.moduleFunction.doc;
     };
     completions.push(completion);
   }

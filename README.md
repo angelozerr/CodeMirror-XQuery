@@ -6,7 +6,10 @@ XQuery editor like :
 
 * [Syntax coloring](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Syntax-Coloring)
 * [Syntax errors](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Syntax-Errors)
-* [Completion](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion) and [Completion with Templates](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion-with-Templates).
+* Advanced completion : 
+ * [Completion](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion) variables, functions, modules etc.
+ * [Completion with Templates](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion-with-Templates) like Eclipse completion template.
+ * [Context information](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion-Context-Information) to displays in a popup contextual infopops information (description about the function,etc) that is related to the selected completion item.
 * [Code Folding](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Code-Folding)
 
 You can play with the XQuery [online demo](http://codemirror-java.opensagres.cloudbees.net/xquery.html) and see 

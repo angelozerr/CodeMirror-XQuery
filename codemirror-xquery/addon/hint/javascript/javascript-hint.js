@@ -51,9 +51,14 @@
       if (!context) var context = [];
       context.push(tprop);
     }
-    return {list: getCompletions(editor, token, context, keywords, options),
+    var data = {list: getCompletions(editor, token, context, keywords, options),
             from: Pos(cur.line, token.start),
             to: Pos(cur.line, token.end)};
+    if (CodeMirror.attachContextInfo) {
+      // if context info is available, attach it
+      CodeMirror.attachContextInfo(data);
+    }
+    return data;
   }
 
   CodeMirror.javascriptHint = function(editor, options) {

@@ -164,8 +164,6 @@ window.CodeMirror = (function() {
     d.pollingFast = false;
     // Self-resetting timeout for the poller
     d.poll = new Delayed();
-    // True when a drag from the editor is active
-    d.draggingText = false;
 
     d.cachedCharWidth = d.cachedTextHeight = null;
     d.measureLineCache = [];
@@ -793,9 +791,16 @@ window.CodeMirror = (function() {
       }
 
       iterateBidiSections(getOrder(lineObj), fromArg || 0, toArg == null ? lineLen : toArg, function(from, to, dir) {
-        var leftPos = coords(dir == "rtl" ? to - 1 : from);
-        var rightPos = coords(dir == "rtl" ? from : to - 1);
-        var left = leftPos.left, right = rightPos.right;
+        var leftPos = coords(from), rightPos, left, right;
+        if (from == to) {
+          rightPos = leftPos;
+          left = right = leftPos.left;
+        } else {
+          rightPos = coords(to - 1);
+          if (dir == "rtl") { var tmp = leftPos; leftPos = rightPos; rightPos = tmp; }
+          left = leftPos.left;
+          right = rightPos.right;
+        }
         if (rightPos.top - leftPos.top > 3) { // Different lines, draw top part
           add(left, leftPos.top, null, leftPos.bottom);
           left = pl;
@@ -1222,8 +1227,8 @@ window.CodeMirror = (function() {
         for (var i = 0; i < step; ++i) middle = moveVisually(lineObj, middle, 1);
       }
       var middleX = getX(middle);
-      if (middleX > x) {to = middle; toX = middleX; if (toOutside = wrongLine) toX += 1000; dist -= step;}
-      else {from = middle; fromX = middleX; fromOutside = wrongLine; dist = step;}
+      if (middleX > x) {to = middle; toX = middleX; if (toOutside = wrongLine) toX += 1000; dist = step;}
+      else {from = middle; fromX = middleX; fromOutside = wrongLine; dist -= step;}
     }
   }
 
@@ -1402,18 +1407,16 @@ window.CodeMirror = (function() {
     if (!cm.state.focused || hasSelection(input) || isReadOnly(cm)) return false;
     var text = input.value;
     if (text == prevInput && posEq(sel.from, sel.to)) return false;
-    // IE enjoys randomly deselecting our input's text when
-    // re-focusing. If the selection is gone but the cursor is at the
-    // start of the input, that's probably what happened.
-    if (ie && text && input.selectionStart === 0) {
+    if (ie && !ie_lt9 && cm.display.inputHasSelection === text) {
       resetInput(cm, true);
       return false;
     }
+
     var withOp = !cm.curOp;
     if (withOp) startOperation(cm);
     sel.shift = false;
     var same = 0, l = Math.min(prevInput.length, text.length);
-    while (same < l && prevInput[same] == text[same]) ++same;
+    while (same < l && prevInput.charCodeAt(same) == text.charCodeAt(same)) ++same;
     var from = sel.from, to = sel.to;
     if (same < prevInput.length)
       from = Pos(from.line, from.ch - (prevInput.length - same));
@@ -1437,10 +1440,14 @@ window.CodeMirror = (function() {
       cm.display.prevInput = "";
       minimal = hasCopyEvent &&
         (doc.sel.to.line - doc.sel.from.line > 100 || (selected = cm.getSelection()).length > 1000);
-      if (minimal) cm.display.input.value = "-";
-      else cm.display.input.value = selected || cm.getSelection();
+      var content = minimal ? "-" : selected || cm.getSelection();
+      cm.display.input.value = content;
       if (cm.state.focused) selectInput(cm.display.input);
-    } else if (user) cm.display.prevInput = cm.display.input.value = "";
+      if (ie && !ie_lt9) cm.display.inputHasSelection = content;
+    } else if (user) {
+      cm.display.prevInput = cm.display.input.value = "";
+      if (ie && !ie_lt9) cm.display.inputHasSelection = null;
+    }
     cm.display.inaccurateSelection = minimal;
   }
 
@@ -1458,7 +1465,16 @@ window.CodeMirror = (function() {
   function registerEventHandlers(cm) {
     var d = cm.display;
     on(d.scroller, "mousedown", operation(cm, onMouseDown));
-    on(d.scroller, "dblclick", operation(cm, e_preventDefault));
+    if (ie)
+      on(d.scroller, "dblclick", operation(cm, function(e) {
+        var pos = posFromMouse(cm, e);
+        if (!pos || clickInGutter(cm, e) || eventInWidget(cm.display, e)) return;
+        e_preventDefault(e);
+        var word = findWordAt(getLine(cm.doc, pos.line).text, pos);
+        extendSelection(cm.doc, word.from, word.to);
+      }));
+    else
+      on(d.scroller, "dblclick", e_preventDefault);
     on(d.lineSpace, "selectstart", function(e) {
       if (!eventInWidget(d, e)) e_preventDefault(e);
     });
@@ -1649,9 +1665,12 @@ window.CodeMirror = (function() {
     e_preventDefault(e);
     if (type == "single") extendSelection(cm.doc, clipPos(doc, start));
 
-    var startstart = sel.from, startend = sel.to;
+    var startstart = sel.from, startend = sel.to, lastPos = start;
 
     function doSelect(cur) {
+      if (posEq(lastPos, cur)) return;
+      lastPos = cur;
+
       if (type == "single") {
         extendSelection(cm.doc, clipPos(doc, start), cur);
         return;
@@ -1786,6 +1805,7 @@ window.CodeMirror = (function() {
   }
 
   function onDragStart(cm, e) {
+    if (ie && !cm.state.draggingText) { e_stop(e); return; }
     if (eventInWidget(cm.display, e)) return;
 
     var txt = cm.getSelection();
@@ -2024,6 +2044,7 @@ window.CodeMirror = (function() {
         this.doc.mode.electricChars.indexOf(ch) > -1)
       setTimeout(operation(cm, function() {indentLine(cm, cm.doc.sel.to.line, "smart");}), 75);
     if (handleCharBinding(cm, e, ch)) return;
+    if (ie && !ie_lt9) cm.display.inputHasSelection = null;
     fastPoll(cm);
   }
 
@@ -2141,7 +2162,7 @@ window.CodeMirror = (function() {
 
     // hint is null, leave the selection alone as much as possible
     var adjustPos = function(pos) {
-      if (posEq(change.from, change.to) ? posLess(pos, change.from) : !posLess(change.from, pos)) return pos;
+      if (posLess(pos, change.from)) return pos;
       if (!posLess(change.to, pos)) return end;
 
       var line = pos.line + change.text.length - (change.to.line - change.from.line) - 1, ch = pos.ch;
@@ -2609,7 +2630,6 @@ window.CodeMirror = (function() {
     if (indentString != curSpaceString)
       replaceRange(cm.doc, indentString, Pos(n, 0), Pos(n, curSpaceString.length), "+input");
     line.stateAfter = null;
-    return indentString.length;
   }
 
   function changeLine(cm, handle, op) {
@@ -2757,7 +2777,7 @@ window.CodeMirror = (function() {
         if (dir == null) dir = this.options.smartIndent ? "smart" : "prev";
         else dir = dir ? "add" : "subtract";
       }
-      if (isLine(this.doc, n)) return indentLine(this, n, dir, aggressive);
+      if (isLine(this.doc, n)) indentLine(this, n, dir, aggressive);
     }),
     indentSelection: operation(null, function(how) {
       var sel = this.doc.sel;
@@ -3112,6 +3132,7 @@ window.CodeMirror = (function() {
   option("flattenSpans", true);
   option("pollInterval", 100);
   option("undoDepth", 40, function(cm, val){cm.doc.history.undoDepth = val;});
+  option("historyEventDelay", 500);
   option("viewportMargin", 10, function(cm){cm.refresh();}, true);
   option("maxHighlightLength", 10000, function(cm){loadMode(cm); cm.refresh();}, true);
   option("moveInputWithCursor", true, function(cm, val) {
@@ -3183,7 +3204,9 @@ window.CodeMirror = (function() {
   CodeMirror.defineExtension = function(name, func) {
     CodeMirror.prototype[name] = func;
   };
-
+  CodeMirror.defineDocExtension = function(name, func) {
+    Doc.prototype[name] = func;
+  };
   CodeMirror.defineOption = option;
 
   var initHooks = [];
@@ -3297,8 +3320,7 @@ window.CodeMirror = (function() {
     newlineAndIndent: function(cm) {
       operation(cm, function() {
         cm.replaceSelection("\n", "end", "+input");
-        var line = cm.getCursor().line, indented = cm.indentLine(line, null, true);
-        if (indented) cm.setCursor(line, indented);
+        cm.indentLine(cm.getCursor().line, null, true);
       })();
     },
     toggleOverwrite: function(cm) {cm.toggleOverwrite();}
@@ -4863,7 +4885,8 @@ window.CodeMirror = (function() {
     if (cur &&
         (hist.lastOp == opId ||
          hist.lastOrigin == change.origin && change.origin &&
-         ((change.origin.charAt(0) == "+" && hist.lastTime > time - 600) || change.origin.charAt(0) == "*"))) {
+         ((change.origin.charAt(0) == "+" && doc.cm && hist.lastTime > time - doc.cm.options.historyEventDelay) ||
+          change.origin.charAt(0) == "*"))) {
       // Merge this change into the last event
       var last = lst(cur.changes);
       if (posEq(change.from, change.to) && posEq(change.from, last.to)) {
@@ -5554,7 +5577,7 @@ window.CodeMirror = (function() {
 
   // THE END
 
-  CodeMirror.version = "3.11 +";
+  CodeMirror.version = "3.12 +";
 
   return CodeMirror;
 })();

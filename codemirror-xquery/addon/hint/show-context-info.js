@@ -3,7 +3,7 @@
   var contextInfo = null;
 
   CodeMirror.attachContextInfo = function(data) {
-    data.onSelect = function(completion, hints) {      
+    CodeMirror.on(data, 'select', function(completion, hints) {      
       hints = hints.parentNode;
       var information = null;
       if (completion.info) {
@@ -31,14 +31,15 @@
           contextInfo.style.display = 'none';
         }
       }
-    }
+    });
 
-    data.onClose = function() {
+    CodeMirror.on(data, 'close', function() {
       if (contextInfo != null) {
         contextInfo.parentNode.removeChild(contextInfo);
       }
       contextInfo = null;
-    }
+    });
+    
   }
 
   CodeMirror.showContextInfo = function(getHints) {

@@ -370,7 +370,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     return function(type, value) {
       if (type == "keyword b" && value == "else") {
         cx.state.lexical = new JSLexical(indent, 0, "form", null, cx.state.lexical);
-        return cont(expression, statement, poplex);
+        return cont(statement, poplex);
       }
       return pass();
     };
@@ -426,7 +426,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       if (state.tokenize != jsTokenComment && stream.eatSpace()) return null;
       var style = state.tokenize(stream, state);
       if (type == "comment") return style;
-      state.lastType = type;
+      state.lastType = type == "operator" && (content == "++" || content == "--") ? "incdec" : type;
       return parseJS(state, style, type, content, stream);
     },
 

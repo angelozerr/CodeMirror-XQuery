@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CodeMirror: XQuery Variables Demo</title>
+    
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
+    <script src="../../codemirror/lib/codemirror.js"></script>    
+    <link rel="stylesheet" href="../../codemirror/doc/docs.css">
+    <link rel="stylesheet" href="../../codemirror/theme/xq-light.css">
+	
+    <!-- CodeMirror-XQuery -->
+	<script src="../addon/execute/xquery/track-vars.js"></script>
+    <script src="../mode/xquery/xquery.js"></script>
+
+    <style type="text/css">
+      .CodeMirror {
+        height:500px;
+      }
+    </style>    
+  </head>
+  <body>
+    <h1>CodeMirror: XQuery Variables demo</h1>
+
+    <form><textarea id="code" name="code">
+declare variable $a as xs:string external;
+declare variable $b as xs:integer external;
+    </textarea>
+    <div id="changed" ></div>
+    <div id="vars" ></div>
+	</form>
+
+<p></p>
+
+    <script>      
+      function myTrackVars(globalVars, changed) {
+      	document.getElementById('changed').innerHTML = changed;
+      	document.getElementById('vars').innerHTML = JSON.stringify(globalVars, ' ');
+      }
+    
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        lineNumbers: true,
+        theme: "xq-light",
+        trackVars: myTrackVars        
+      });
+      
+    </script>
+  </body>
+</html>

@@ -42,8 +42,8 @@ CodeMirror.tarckVars = (function() {
     var vars = [];    
     while (globalVars) {
       var varDecl = globalVars.varDecl;
-      vars.push(varDecl.name);
-      vars.push(varDecl.dataType);
+      vars.unshift(varDecl.dataType);
+      vars.unshift(varDecl.name);
       globalVars = globalVars.next;
     }
     return vars;

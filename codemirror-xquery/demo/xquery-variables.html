@@ -24,8 +24,9 @@
     <h1>CodeMirror: XQuery Variables demo</h1>
 
     <form><textarea id="code" name="code">
-declare variable $a as xs:string external;
-declare variable $b as xs:integer external;
+declare variable $a as xs:string* external;
+declare variable $b as xs:string external;
+declare variable $c as xs:integer external;
     </textarea>
     <div id="changed" ></div>
     <div id="vars" ></div>

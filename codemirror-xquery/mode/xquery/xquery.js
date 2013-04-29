@@ -259,7 +259,11 @@ CodeMirror.defineMode("xquery", function(config) {
       
       if (trackContext) {
         if (state.currentVar != null  && state.currentVar.hasAs) {
-          if(state.currentVar.dataType == null) {state.currentVar.dataType=word} else {state.currentVar.dataType += word};
+          if (word == ',') {
+            state.currentVar = null;
+          } else {
+            if(state.currentVar.dataType == null) {state.currentVar.dataType=word} else {state.currentVar.dataType += word};
+          }
         }
       
         if (state.tokenModuleParsing == null) {
@@ -696,8 +700,13 @@ CodeMirror.defineMode("xquery", function(config) {
     },
 
     token: function(stream, state) {
-      if (stream.eatSpace()) return null;
       var currentVar = state.currentVar;
+      if (stream.eatSpace()) {
+        if (currentVar != null && currentVar.dataType != null) {
+          state.currentVar = null;
+        }
+        return null;
+      }
       var style = state.tokenize(stream, state);
       state.lastType = type;      
       if (currentVar != null) {
@@ -708,7 +717,7 @@ CodeMirror.defineMode("xquery", function(config) {
     			  state.currentVar = null;
     		  }
     	  } else {
-    		  if(type != "operator") state.currentVar = null;
+    		  //if(type != "operator") state.currentVar = null;
       	  }
       }
       return style;

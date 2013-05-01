@@ -53,7 +53,7 @@ CodeMirror.tarckVars = (function() {
     var lineCount = cm.lineCount();
     var token = cm.getTokenAt(CodeMirror.Pos(lineCount, cm
         .getLine(lineCount - 1).length));
-    if (token.state && token.state.globalVars) {
+    if (token.state) {
       var state = cm._xqTrackVarsState;
       var globalVars = getVars(token.state.globalVars);
       var changed = hasVarsChanged(cm, globalVars);

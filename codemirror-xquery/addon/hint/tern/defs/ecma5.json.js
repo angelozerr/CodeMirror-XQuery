@@ -1,6 +1,7 @@
 (function() {
 var def = {
   "!name": "ecma5",
+  "!define": {"Error.prototype": "Error.prototype"},
   "Infinity": {
     "!type": "number",
     "!url": "https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Infinity",
@@ -134,7 +135,7 @@ var def = {
     "!doc": "Every function in JavaScript is actually a Function object."
   },
   "Array": {
-    "!type": "fn(size: number)",
+    "!type": "fn(size: number) -> !custom:Array_ctor",
     "isArray": {
       "!type": "fn(value: ?) -> bool",
       "!url": "https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/isArray",
@@ -947,6 +948,5 @@ var def = {
     "!doc": "JSON (JavaScript Object Notation) is a data-interchange format.  It closely resembles a subset of JavaScript syntax, although it is not a strict subset. (See JSON in the JavaScript Reference for full details.)  It is useful when writing any kind of JavaScript-based application, including websites and browser extensions.  For example, you might store user information in JSON format in a cookie, or you might store extension preferences in JSON in a string-valued browser preference."
   }
 }
-
 CodeMirror.tern.addDef(def);
 })();

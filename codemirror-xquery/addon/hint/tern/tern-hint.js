@@ -19,6 +19,7 @@
   CodeMirror.ternHints = function(cm, c) {
     var req = buildRequest(cm, {
       type : "completions",
+      caseInsensitive : true,
       types : true,
       docs : true
     });
@@ -39,20 +40,31 @@
                 var completion = data.completions[i], className = typeToIcon(completion.type);
                 if (data.guess)
                   className += " Tern-completion-guess";
-                completions.push({
-                  text : completion.name + after,
-                  displayText : completion.name,
-                  className : className,
-                  doc : completion.doc
-                });
+                var item = {
+                  "text" : completion.name + ' - ' + completion.type,
+                  "className" : className,
+                  "ternItem" : completion
+                };
+                item.hint = function(cm, data, completion) {
+                  var from = Pos(data.from.line, data.from.ch);
+                  var to = Pos(data.to.line, data.to.ch);
+                  var ternItem = completion.ternItem;
+                  cm.replaceRange(ternItem.name, from, to);
+                }
+                completions.push(item);
               }
 
               // var out = document.getElementById("out");
-              var obj = {
+              var data = {
                 from : from,
                 to : to,
                 list : completions
               };
+
+              if (CodeMirror.attachContextInfo) {
+                // if context info is available, attach it
+                CodeMirror.attachContextInfo(data);
+              }
               /*
                * CodeMirror.on(obj, "close", function() { out.innerHTML = "";
                * }); CodeMirror.on(obj, "select", function(cur) { out.innerHTML =
@@ -61,7 +73,7 @@
                * "hint-doc"; node.appendChild(document.createTextNode(cur.doc)); }
                * });
                */
-              c(obj);
+              c(data);
             });
   }
 
@@ -140,7 +152,7 @@
       suffix = "array";
     else
       suffix = "object";
-    return "Tern-completion Tern-completion-" + suffix;
+    return "Tern-completion-" + suffix;
   }
 
   function getFile() {

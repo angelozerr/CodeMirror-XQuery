@@ -181,8 +181,8 @@
                     if (url) {
                       content += '<li><a href="' + url + '" target="_blank" >'
                           + url + '</a></li>';
-                      content += '<li><iframe src="' + url
-                          + '" ></iframe></li>';
+                      /*content += '<li><iframe src="' + url
+                          + '" ></iframe></li>';*/
                     }
                     content += '</ul>'
                   }

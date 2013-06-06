@@ -284,7 +284,7 @@
                 CodeMirror.runMode(content, cm.getMode().name, result);
                 return result;
               }
-              return content
+              return content;
             };
             completions.push(completion);
           }

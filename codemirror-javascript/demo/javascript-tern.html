@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8">
     <title>CodeMirror: Javascript - Tern </title>
+    
+    <!-- CodeMirror -->
     <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
     <script src="../../codemirror/lib/codemirror.js"></script>
     <link rel="stylesheet" href="../../codemirror/theme/eclipse.css">
@@ -11,12 +13,8 @@
     <script src="../../codemirror/addon/edit/closebrackets.js"></script>    
     <script src="../../codemirror/addon/edit/matchbrackets.js"></script>
     <script src="../../codemirror/addon/selection/active-line.js"></script>
-    
+    <script src="../../codemirror/addon/runmode/runmode.js"></script>
     <script src="../../codemirror/mode/javascript/javascript.js"></script>    
-	<script src="http://ajax.aspnetcdn.com/ajax/jshint/r07/jshint.js"></script>
-	<script src="../../codemirror/addon/lint/lint.js"></script>
-    <link rel="stylesheet" href="../../codemirror/addon/lint/lint.css">
-	<script src="../../codemirror/addon/lint/javascript-lint.js"></script>
 
   <!-- Tern JS -->
   <script src="../../ternjs/acorn/acorn.js"></script>
@@ -33,15 +31,19 @@
   <script src="../addon/hint/tern/tern-hint.js"></script>    
   <script src="../addon/hint/tern/defs/ecma5.json.js"></script>
   <script src="../addon/hint/tern/defs/browser.json.js"></script>
+
+  <!-- CodeMirror Extension -->  
   
-  <link rel="stylesheet" href="../addon/hint/templates-hint.css">
-  <script src="../addon/hint/templates-hint.js"></script>
+  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-hint-eclipse.css">
+  <script src="../../codemirror-extension/addon/hint/show-context-info.js"></script>
+  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-context-info.css">
+  
+  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/templates-hint.css">
+  <script src="../../codemirror-extension/addon/hint/templates-hint.js"></script>
+  
+  <!-- CodeMirror Javascript -->
   <script src="../addon/hint/javascript/javascript-templates.js"></script>
-  		
-  <link rel="stylesheet" href="../addon/hint/show-hint-eclipse.css">
-  <script src="../addon/hint/show-context-info.js"></script>
-  <link rel="stylesheet" href="../addon/hint/show-context-info.css">
-          
+  		          
     <link rel="stylesheet" href="../../codemirror/doc/docs.css">
 	<style type="text/css">
 		.cm-s-eclipse .CodeMirror-activeline-background {background: #e8f2ff !important;}
@@ -87,8 +89,7 @@ a.
          	"'.'": passAndHint,
         	"Ctrl-Space": "autocomplete"
         },
-        gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
-    	lintWith: CodeMirror.javascriptValidator,
+        gutters: ["CodeMirror-linenumbers"],
         ternWith : true
       });
     </script>

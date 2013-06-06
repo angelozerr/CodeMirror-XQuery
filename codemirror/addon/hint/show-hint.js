@@ -1,7 +1,7 @@
 CodeMirror.showHint = function(cm, getHints, options) {
   if (!options) options = {};
   var startCh = cm.getCursor().ch, continued = false;
-  var closeOn = options.closeCharacters || /[\s()\[\]{};:]/;
+  var closeOn = options.closeCharacters || /[\s()\[\]{};:>]/;
 
   function startHinting() {
     // We want a single cursor position.
@@ -24,12 +24,17 @@ CodeMirror.showHint = function(cm, getHints, options) {
   }
 
   function showHints(data) {
-    if (!data || !data.list.length) return;
+    if (!data || !data.list.length) {
+      if (continued) {
+        cm.state.completionActive = false;
+        CodeMirror.signal(data, "close");
+      }
+      return;
+    }
+
     var completions = data.list;
-    // When there is only one completion, use it directly.
-    if (!continued && options.completeSingle !== false && completions.length == 1) {
+    if (!continued && options.completeSingle != false && completions.length == 1) {
       pickCompletion(cm, data, completions[0]);
-      CodeMirror.signal(data, "close");
       return true;
     }
 
@@ -49,7 +54,7 @@ CodeMirror.showHint = function(cm, getHints, options) {
     var left = pos.left, top = pos.bottom, below = true;
     hints.style.left = left + "px";
     hints.style.top = top + "px";
-    document.body.appendChild(hints);
+    (options.container || document.body).appendChild(hints);
     CodeMirror.signal(data, "shown");
 
     // If we're at the edge of the screen, then we want the menu to appear on the left of the cursor.
@@ -114,6 +119,7 @@ CodeMirror.showHint = function(cm, getHints, options) {
       }
     } else ourMap = baseMap;
 
+    cm.state.completionActive = true;
     cm.addKeyMap(ourMap);
     cm.on("cursorActivity", cursorActivity);
     var closingOnBlur;
@@ -154,7 +160,10 @@ CodeMirror.showHint = function(cm, getHints, options) {
       cm.off("blur", onBlur);
       cm.off("focus", onFocus);
       cm.off("scroll", onScroll);
-      if (willContinue !== true) CodeMirror.signal(data, "close");
+      if (willContinue !== true) {
+        CodeMirror.signal(data, "close");
+        cm.state.completionActive = false;
+      }
     }
     function pick() {
       pickCompletion(cm, data, completions[selectedHint]);
@@ -169,8 +178,9 @@ CodeMirror.showHint = function(cm, getHints, options) {
           pos.ch < startCh || cm.somethingSelected() ||
           (pos.ch && closeOn.test(line.charAt(pos.ch - 1))))
         close();
-      else
-        once = setTimeout(function(){close(true); continued = true; startHinting();}, 70);
+      else {
+        once = setTimeout(function(){close(true); continued = true; startHinting();}, 170);
+      }
     }
     CodeMirror.signal(data, "select", completions[0], hints.firstChild);
     return true;

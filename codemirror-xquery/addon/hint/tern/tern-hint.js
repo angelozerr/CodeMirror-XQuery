@@ -78,7 +78,26 @@
   }
 
   function buildRequest(cm, query, allowFragments) {
-    var files = [], offsetLines = 0;
+    // files
+    var files = [];
+    files.push({
+      type : "full",
+      name : "xxx",
+      text : cm.getValue()
+    });
+    // query
+    query.lineCharPositions = true;
+    if (query.end == null) {
+      query.end = cm.getCursor("end");
+      if (cm.somethingSelected())
+        query.start = cm.getCursor("start");
+    }
+    query.file = "#0";
+    return {
+      query : query,
+      files : files
+    }
+    /*var files = [], offsetLines = 0;
     if (typeof query == "string")
       query = {
         type : query
@@ -90,7 +109,7 @@
         query.start = cm.getCursor("start");
     }
     var startPos = query.start || query.end;
-
+    //curDoc.changed=true; 
     if (curDoc.changed) {
       if (cm.lineCount() > bigDoc && allowFragments !== false
           && curDoc.changed.to - curDoc.changed.from < 100
@@ -129,7 +148,7 @@
     return {
       query : query,
       files : files
-    };
+    };*/
   }
 
   function displayError(err) {
@@ -161,16 +180,16 @@
 
   function getServer() {
     if (server == null) {
+      server = new tern.Server({
+        getFile : getFile,
+        async : true,
+        defs : defs,
+        debug : true
+      /*
+       * , plugins: {requirejs: {}, doc_comment: true}
+       */
+      });
     }
-    server = new tern.Server({
-      getFile : getFile,
-      async : true,
-      defs : defs,
-      debug : true
-    /*
-     * , plugins: {requirejs: {}, doc_comment: true}
-     */
-    });
     return server;
   }
 
@@ -238,7 +257,7 @@
         doc.changed = null;
     });
   }
-
+  var i = 0;
   CodeMirror.defineOption("ternWith", false, function(cm, val, old) {
     if (old && old != CodeMirror.Init) {
       /*
@@ -248,15 +267,7 @@
 
     if (val) {
       getServer();
-      registerDoc("xxx", cm.getDoc());
-      /*
-       * var gutters = cm.getOption("gutters"), hasLintGutter = false; for ( var
-       * i = 0; i < gutters.length; ++i) if (gutters[i] == GUTTER_ID)
-       * hasLintGutter = true; var state = cm._foldingState = new
-       * FoldingState(cm, parseOptions(val), hasLintGutter); cm.on("change",
-       * onChange); if (state.options && state.options.doFoldingOnLoad != false) {
-       * CodeMirror.foldCode(cm); }
-       */
+      //registerDoc("xxx" + i++, cm.getDoc());
     }
   });
 

@@ -39,3 +39,7 @@
   padding-left: 18px!important;
   margin: 3px 0!important;
 }
+
+ul.Tern-completion-doc {
+  list-style-type:none;
+}

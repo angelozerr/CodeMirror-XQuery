@@ -175,11 +175,11 @@
                   var url = ternItem.url;
                   var content = null;
                   if (doc || url) {
-                    content = '<ul>'
+                    content = '<ul class="Tern-completion-doc" >'
                     if (doc)
                       content += '<li>' + doc + '</li>';
                     if (url) {
-                      content += '<li><a href="' + url + '" target="_blank" >'
+                      content += '<li>See <a href="' + url + '" target="_blank" >'
                           + url + '</a></li>';
                       /*content += '<li><iframe src="' + url
                           + '" ></iframe></li>';*/

@@ -2,6 +2,16 @@
   var server = null, defs = [];
   var Pos = CodeMirror.Pos;
 
+  function TernState(cm, options) {
+    this.options = options;
+  }
+  
+  function parseOptions(options) {
+    if (options instanceof Function) return {getText: options};
+    else if (!options || !options.getText) throw new Error("Required option 'getText' missing (tern-hint addon)");
+    return options;
+  }
+  
   function load(file, c) {
     var xhr = new XMLHttpRequest();
     xhr.open("get", file, true);
@@ -181,8 +191,9 @@
                     if (url) {
                       content += '<li>See <a href="' + url + '" target="_blank" >'
                           + url + '</a></li>';
-                      /*content += '<li><iframe src="' + url
-                          + '" ></iframe></li>';*/
+                      /*
+                       * content += '<li><iframe src="' + url + '" ></iframe></li>';
+                       */
                     }
                     content += '</ul>'
                   }
@@ -212,12 +223,18 @@
   }
 
   function buildRequest(cm, query, allowFragments) {
+    var text = null;
+    if (cm.state && cm.state.tern) {
+      text = cm.state.tern.options.getText(cm);
+    } else {
+      text = cm.getValue();
+    }
     // files
     var files = [];
     files.push({
       type : "full",
       name : "cm-tern",
-      text : cm.getValue()
+      text : text
     });
     // query
     query.lineCharPositions = true;
@@ -272,13 +289,11 @@
 
   CodeMirror.defineOption("ternWith", false, function(cm, val, old) {
     if (old && old != CodeMirror.Init) {
-      /*
-       * clearMarks(cm); cm.off("change", onChange); delete cm._foldingState;
-       */
+      delete cm.state.tern;
     }
 
     if (val) {
-
+      var state = cm.state.tern = new TernState(cm, parseOptions(val));
     }
   });
 

@@ -106,7 +106,7 @@ var def = {
     "!doc": "Creates an object wrapper."
   },
   "Function": {
-    "!type": "fn(body: string)",
+    "!type": "fn(body: string) -> fn()",
     "prototype": {
       "!stdProto": "Function",
       "apply": {

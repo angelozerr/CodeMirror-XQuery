@@ -107,7 +107,7 @@
     server.rename(cm);
   }
 
-  function fileFilter(doc) {
+  function fileFilter(value, docName, doc) {
     var cm = doc.cm;
     var state = cm.state.ternExt;
     if (state && state.options.getText) {

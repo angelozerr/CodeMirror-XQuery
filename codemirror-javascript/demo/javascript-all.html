@@ -31,9 +31,12 @@
   <script src="../../ternjs/tern/lib/comment.js"></script>
   <script src="../../ternjs/tern/lib/infer.js"></script>
 
-  <!-- CodeMirror addon with Tern JS -->
-  <link rel="stylesheet" href="../addon/hint/tern/tern-hint.css">
-  <script src="../addon/hint/tern/tern-hint.js"></script>    
+  <!-- Official CodeMirror Tern addon -->
+  <script src="../../codemirror/addon/tern/tern.js"></script>   
+
+  <!-- Extension of CodeMirror Tern addon -->
+  <link rel="stylesheet" href="../addon/hint/tern/tern-extension.css">
+  <script src="../addon/hint/tern/tern-extension.js"></script>    
   <script src="../addon/hint/tern/defs/ecma5.json.js"></script>
   <script src="../addon/hint/tern/defs/browser.json.js"></script>
 
@@ -83,7 +86,7 @@ for // do Ctrl+Space here to open templates (snippet). It uses the CodeMirror Ja
       
       
       function myHint(cm) {
-      	return CodeMirror.showHint(cm, CodeMirror.ternHints, {async: true}); 
+      	return CodeMirror.showHint(cm, CodeMirror.ternHint, {async: true}); 
       }
      
       CodeMirror.commands.autocomplete = function(cm) {
@@ -100,7 +103,11 @@ for // do Ctrl+Space here to open templates (snippet). It uses the CodeMirror Ja
         matchBrackets: true,
         extraKeys: {
          	"'.'": passAndHint,
-        	"Ctrl-Space": "autocomplete"
+        	"Ctrl-Space": "autocomplete",
+        	"Ctrl-I": function(cm) { CodeMirror.tern.showType(cm); },
+  	        "Alt-.": function(cm) { CodeMirror.tern.jumpToDef(cm); },
+	        "Alt-,": function(cm) { CodeMirror.tern.jumpBack(cm); },
+	        "Ctrl-Q": function(cm) { CodeMirror.tern.rename(cm); }
         },
         gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
     	lintWith: CodeMirror.javascriptValidator

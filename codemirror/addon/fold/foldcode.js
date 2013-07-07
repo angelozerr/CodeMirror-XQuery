@@ -2,7 +2,8 @@
   "use strict";
 
   function doFold(cm, pos, options) {
-    var finder = options.call ? options : (options && options.rangeFinder);
+    var finder = options && (options.call ? options : options.rangeFinder);
+    if (!finder) finder = cm.getHelper(pos, "fold");
     if (!finder) return;
     if (typeof pos == "number") pos = CodeMirror.Pos(pos, 0);
     var minSize = options && options.minFoldSize || 0;
@@ -15,7 +16,9 @@
         if (marks[i].__isFold) {
           if (!allowFolded) return null;
           range.cleared = true;
+          var found = marks[i].find();
           marks[i].clear();
+          CodeMirror.signal(cm, "unfold", cm, found.from, found.to);
         }
       }
       return range;
@@ -35,6 +38,7 @@
       clearOnEnter: true,
       __isFold: true
     });
+    CodeMirror.signal(cm, "fold", cm, range.from, range.to);
   }
 
   function makeWidget(options) {
@@ -56,7 +60,7 @@
   // New-style interface
   CodeMirror.defineExtension("foldCode", function(pos, options) { doFold(this, pos, options); });
 
-  CodeMirror.combineRangeFinders = function() {
+  CodeMirror.registerHelper("fold", "combine", function() {
     var funcs = Array.prototype.slice.call(arguments, 0);
     return function(cm, start) {
       for (var i = 0; i < funcs.length; ++i) {
@@ -64,5 +68,5 @@
         if (found) return found;
       }
     };
-  };
+  });
 })();

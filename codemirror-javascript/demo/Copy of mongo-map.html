@@ -33,16 +33,15 @@
   <script src="../../ternjs/tern/lib/comment.js"></script>
   <script src="../../ternjs/tern/lib/infer.js"></script>
 
-  <!-- Official CodeMirror Tern addon -->
-  <script src="../../codemirror/addon/tern/tern.js"></script>   
-
-  <!-- Extension of CodeMirror Tern addon -->
-  <link rel="stylesheet" href="../addon/hint/tern/tern-extension.css">
-  <script src="../addon/hint/tern/tern-extension.js"></script>    
+  <!-- CodeMirror addon with Tern JS -->
+  <link rel="stylesheet" href="../addon/hint/tern/tern-hint.css">
+  <script src="../addon/hint/tern/tern-hint.js"></script>    
   <script src="../addon/hint/tern/defs/ecma5.json.js"></script>
+  <script src="../addon/hint/tern/defs/browser.json.js"></script>
   <script src="../addon/hint/tern/defs/mongo-map.json.js"></script>
 
-  <!-- CodeMirror Extension -->    
+  <!-- CodeMirror Extension -->  
+  
   <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-hint-eclipse.css">
   <script src="../../codemirror-extension/addon/hint/show-context-info.js"></script>
   <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-context-info.css">
@@ -76,8 +75,6 @@
 	<form><textarea id="json" name="json" >{"_id":{"$oid":"50d8fdedadd222278ba9090f"}, "astring" : "xxxx", "adate" : {"$date":"2012-12-25T01:14:21.312Z"}, "anumber" : 1, "aboolean" : true, "anarray" : [{"item":1}, {"item2":"ee"}]}
 	</textarea>
     <textarea id="code" name="code">function() {
-    var a = [];
-    a.
 	this.// Ctrl+Space
 }
 </textarea></form>
@@ -114,7 +111,7 @@
       }
       
       function myHint(cm) {
-      	return CodeMirror.showHint(cm, CodeMirror.ternHint, {async: true}); 
+      	return CodeMirror.showHint(cm, CodeMirror.ternHints, {async: true}); 
       }
      
       CodeMirror.commands.autocomplete = function(cm) {
@@ -122,10 +119,10 @@
       }
       
       function getText(cm) {
-        var jsonObj = BSON.parseStrict(jsonEditor.getValue());
+        var jsonObj = BSON.parseStrict(document.getElementById('json').value);
         json = toJSONMeta(jsonObj);        
-      	//return "var f=" + cm.getValue() + "f.apply(" + json + ")"; 
-      	return cm.getValue() + ".apply(" + json + ")";
+      	var obj = "var arr = " + json; 
+      	return "var f=" + cm.getValue() + "f.apply(" + obj + ")"; 
       	
       }    
       
@@ -138,11 +135,6 @@
         matchBrackets: true,
         gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
     	lintWith: CodeMirror.jsonValidator
-      });
-      
-      CodeMirror.on(jsonEditor, 'change', function(cm) {
-        var lastLine = editor.lastLine();
-      	editor.doc.changed = {from: lastLine, to: lastLine};
       });
       
       function toJSONMeta(jsonObj) {

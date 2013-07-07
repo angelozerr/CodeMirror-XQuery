@@ -17,4 +17,4 @@ the [XQuery Features](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Featu
 
 ![SyntaxError1](https://github.com/angelozerr/CodeMirror-XQuery/wiki/images/XQueryEditor.png)
 
-# Why CodeMirror-XQuery?
+# Why CodeMirror-XQuery? 

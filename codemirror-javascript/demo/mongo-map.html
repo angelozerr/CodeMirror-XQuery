@@ -143,8 +143,8 @@
       });
       
       CodeMirror.on(jsonEditor, 'change', function(cm) {
-        var lastLine = editor.lastLine();
-      	editor.doc.changed = {from: lastLine, to: lastLine};
+        var server = CodeMirror.tern.getServer(editor);
+        server.delDoc('[doc]');
       });
       
       function toJSONMeta(jsonObj) {

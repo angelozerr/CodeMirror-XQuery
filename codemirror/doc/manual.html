@@ -375,14 +375,15 @@
 
     <h2 id="events">Events</h2>
 
-    <p>A CodeMirror instance emits a number of events, which allow
-    client code to react to various situations. These are registered
-    with the <a href="#on"><code>on</code></a> method (and
-    removed with the <a href="#off"><code>off</code></a>
-    method). These are the events that fire on the instance object.
-    The name of the event is followed by the arguments that will be
-    passed to the handler. The <code>instance</code> argument always
-    refers to the editor instance.</p>
+    <p>Various CodeMirror-related objects emit events, which allow
+    client code to react to various situations. Handlers for such
+    events can be registed with the <a href="#on"><code>on</code></a>
+    and <a href="#off"><code>off</code></a> methods on the objects
+    that the event fires on.</p>
+
+    <p>An editor instance fires the following events.
+    The <code>instance</code> argument always refers to the editor
+    itself.</p>
 
     <dl>
       <dt id="event_change"><code><strong>"change"</strong> (instance: CodeMirror, changeObj: object)</code></dt>
@@ -488,7 +489,7 @@
       should <em>not</em> try to change the state of the editor.</dd>
 
       <dt id="event_dom"><code><strong>"mousedown"</strong>,
-      <strong>"dblclick"</strong>, <strong>"keydown"</strong>, <strong>"keypress"</strong>,
+      <strong>"dblclick"</strong>, <strong>"contextmenu"</strong>, <strong>"keydown"</strong>, <strong>"keypress"</strong>,
       <strong>"keyup"</strong>, <strong>"dragstart"</strong>, <strong>"dragenter"</strong>,
       <strong>"dragover"</strong>, <strong>"drop"</strong>
       (instance: CodeMirror, event: Event)</code></dt>
@@ -497,10 +498,7 @@
       CodeMirror should do no further handling.</dd>
     </dl>
 
-    <p>It is also possible to <a href="#on">register</a> events on
-    other objects. Use <code>CodeMirror.on(handle, "eventName",
-    func)</code> to register handlers on objects that don't have their
-    own <code>on</code> method. Document objects (instances
+    <p>Document objects (instances
     of <a href="#Doc"><code>CodeMirror.Doc</code></a>) emit the
     following events:</p>
 
@@ -1151,6 +1149,10 @@
         is part of the marker.</dd>
         <dt id="mark_endStyle"><code><strong>endStyle</strong>: string</code></dt><dd>Equivalent
         to <code>startStyle</code>, but for the rightmost span.</dd>
+        <dt id="mark_title"><code><strong>title</strong>:
+        string</code></dt><dd>When given, will give the nodes created
+        for this span a HTML <code>title</code> attribute with the
+        given value.</dd>
         <dt id="mark_shared"><code><strong>shared</strong>: boolean</code></dt><dd>When the
         target document is <a href="#linkedDoc">linked</a> to other
         documents, you can set <code>shared</code> to true to make the
@@ -1253,7 +1255,7 @@
       widget again, simply use DOM methods (move it somewhere else, or
       call <code>removeChild</code> on its parent).</dd>
 
-      <dt id="addLineWidget"><code><strong>cm.addLineWidget</strong>(line: integer|LineHandle, node: Element, ?options: object, ?pos: integer) → LineWidget</code></dt>
+      <dt id="addLineWidget"><code><strong>cm.addLineWidget</strong>(line: integer|LineHandle, node: Element, ?options: object) → LineWidget</code></dt>
       <dd>Adds a line widget, an element shown below a line, spanning
       the whole of the editor's width, and moving the lines below it
       downwards. <code>line</code> should be either an integer or a

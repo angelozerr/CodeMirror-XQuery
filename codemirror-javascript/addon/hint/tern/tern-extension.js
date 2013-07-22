@@ -131,6 +131,8 @@
     }
     return defaultServer;
   }
+  
+  CodeMirror.tern.getServer = getServer;
 
   function startsWith(str, token) {
     return str.slice(0, token.length).toUpperCase() == token.toUpperCase();

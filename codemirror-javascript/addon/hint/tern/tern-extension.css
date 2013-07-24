@@ -49,8 +49,8 @@ ul.CodeMirror-Tern-completion-doc {
   border-radius: 3px;
   color: #444;
   padding: 2px 5px;
-  font-size: 90%;
-  font-family: monospace;
+  font-size: 12px;
+  font-family: Tahoma!important;
   background-color: white;
   white-space: pre-wrap;
 

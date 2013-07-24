@@ -20,6 +20,8 @@ function setFullScreen(cm, full) {
 }
 CodeMirror.on(window, "resize",
     function() {
+      if (!document.body)
+	  return;
       var showing = document.body
           .getElementsByClassName("CodeMirror-fullscreen")[0];
       if (!showing)

@@ -29,6 +29,11 @@
   }
   CodeMirror.defineXQueryModule = defineXQueryModule;
 
+  function findDefaultModuleByPrefix(prefix) {
+  	return defaultModules[prefix];
+  }
+  CodeMirror.findDefaultModuleByPrefix = findDefaultModuleByPrefix;
+  
   function findModuleByDeclaration(importedModule) {
     if (importedModule && importedModule.namespace) {
       var module = findModule(importedModule.namespace, importedModule.location);
@@ -362,7 +367,7 @@
   function populateDefaultModulePrefix(s, completions) {
     for ( var i = 0; i < defaultModulePrefixes.length; i++) {
       var prefix = defaultModulePrefixes[i];
-      var module = defaultModules[prefix];
+      var module = findDefaultModuleByPrefix(prefix);
       populateModulePrefix(s, module, completions);
     }
   }
@@ -476,7 +481,7 @@
 
       if (prefix) {
         // test if it's default prefix
-        var module = defaultModules[prefix];
+        var module = findDefaultModuleByPrefix(prefix);
         if (!module) {
           // search the declared module which checks the prefix
           // ex import module namespace dls = "http://marklogic.com/xdmp/dls" at

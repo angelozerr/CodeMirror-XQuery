@@ -1,14 +1,11 @@
 .CodeMirror-templates-variable {
-  border-bottom: solid #4664A5 1px;
-  border-top: solid #4664A5 1px;
+  outline: solid #4664A5 1px;
 }
       
 .CodeMirror-templates-variable-start {
-  border-left: solid #4664A5 1px;
 }
 
 .CodeMirror-templates-variable-end {
-  border-right: solid #4664A5 1px;
 }
 
 .CodeMirror-templates-variable-selected {

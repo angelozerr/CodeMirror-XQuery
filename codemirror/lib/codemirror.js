@@ -461,7 +461,7 @@ window.CodeMirror = (function() {
     var positionsChangedFrom = Infinity;
     if (cm.options.lineNumbers)
       for (var i = 0; i < changes.length; ++i)
-        if (changes[i].diff) { positionsChangedFrom = changes[i].from; break; }
+        if (changes[i].diff && changes[i].from < positionsChangedFrom) { positionsChangedFrom = changes[i].from; }
 
     var end = doc.first + doc.size;
     var from = Math.max(visible.from - cm.options.viewportMargin, doc.first);
@@ -1096,6 +1096,7 @@ window.CodeMirror = (function() {
       if (cur.measureRight) rect.right = getRect(cur.measureRight).left;
       if (cur.leftSide) rect.leftSide = measureRect(getRect(cur.leftSide));
     }
+    removeChildren(cm.display.measure);
     for (var i = 0, cur; i < data.length; ++i) if (cur = data[i]) {
       finishRect(cur);
       if (cur.leftSide) finishRect(cur.leftSide);
@@ -2080,8 +2081,8 @@ window.CodeMirror = (function() {
   function onKeyDown(e) {
     var cm = this;
     if (!cm.state.focused) onFocus(cm);
-    if (ie && e.keyCode == 27) { e.returnValue = false; }
     if (signalDOMEvent(cm, e) || cm.options.onKeyEvent && cm.options.onKeyEvent(cm, addStop(e))) return;
+    if (ie && e.keyCode == 27) e.returnValue = false;
     var code = e.keyCode;
     // IE does strange things with escape.
     cm.doc.sel.shift = code == 16 || e.shiftKey;

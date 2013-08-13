@@ -721,7 +721,10 @@ CodeMirror.defineMode("xquery", function(config) {
       	  }
       }
       return style;
-    }
+    },
+    
+    blockCommentStart: "(:",
+    blockCommentEnd: ":)"
   };
 
 });

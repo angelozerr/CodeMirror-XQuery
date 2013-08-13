@@ -32,7 +32,26 @@
   function findDefaultModuleByPrefix(prefix) {
   	return defaultModules[prefix];
   }
-  CodeMirror.findDefaultModuleByPrefix = findDefaultModuleByPrefix;
+  
+  function findModuleByPrefix(prefix, importedModules) {
+      var module = findDefaultModuleByPrefix(prefix);
+      if (!module) {
+        // search the declared module which checks the prefix
+        // ex import module namespace dls = "http://marklogic.com/xdmp/dls" at
+        // "/MarkLogic/dls.xqy";
+        // prefix=dls will retrieve the module "http://marklogic.com/xdmp/dls"
+        // at "/MarkLogic/dls.xqy";
+        var importedModule = getImportedModule(importedModules,
+            prefix);
+        // it exists an included module with the given prefix, search the
+        // module
+        // with the given namespace URI (ex:"http://marklogic.com/xdmp/dls").
+        module = findModuleByDeclaration(importedModule);
+      }
+      return module
+
+  }
+  CodeMirror.findModuleByPrefix = findModuleByPrefix;
   
   function findModuleByDeclaration(importedModule) {
     if (importedModule && importedModule.namespace) {
@@ -481,20 +500,7 @@
 
       if (prefix) {
         // test if it's default prefix
-        var module = findDefaultModuleByPrefix(prefix);
-        if (!module) {
-          // search the declared module which checks the prefix
-          // ex import module namespace dls = "http://marklogic.com/xdmp/dls" at
-          // "/MarkLogic/dls.xqy";
-          // prefix=dls will retrieve the module "http://marklogic.com/xdmp/dls"
-          // at "/MarkLogic/dls.xqy";
-          var importedModule = getImportedModule(token.state.importedModules,
-              prefix);
-          // it exists an included module with the given prefix, search the
-          // module
-          // with the given namespace URI (ex:"http://marklogic.com/xdmp/dls").
-          module = findModuleByDeclaration(importedModule);
-        }
+        var module = findModuleByPrefix(prefix, token.state.importedModules);
         if (module) {
           populateModuleFunctions(module, prefix, funcName, completions);
         }

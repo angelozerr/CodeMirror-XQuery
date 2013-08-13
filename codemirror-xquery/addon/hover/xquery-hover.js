@@ -26,13 +26,17 @@ CodeMirror.registerHelper("textHover", "xquery", function(cm, node, e) {
       return label;
    }
   
-  var s = node.innerText;
+  var s = node.innerText || node.textContent;
   var prefixIndex = s.lastIndexOf(':');
   if (prefixIndex != -1) {
- 	if (CodeMirror.findDefaultModuleByPrefix) {
+ 	if (CodeMirror.findModuleByPrefix) {
+ 	   var lineCount = cm.lineCount();
+    	var token = cm.getTokenAt(CodeMirror.Pos(lineCount, cm.getLine(lineCount - 1).length));
+    	if (!token.state) return;
+ 	    var importedModules = token.state.importedModules;
         var prefix = s.substring(0, prefixIndex);
         var funcName = s.substring(prefixIndex + 1, s.length);
- 		var module = CodeMirror.findDefaultModuleByPrefix(prefix);
+ 		var module = CodeMirror.findModuleByPrefix(prefix, importedModules);
  		if (module) {
  			// loop for each function
 		    var functions = module.functions;

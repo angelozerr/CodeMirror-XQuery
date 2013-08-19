@@ -1,7 +1,7 @@
 (function() {
   "use strict";
 
-  function showTooltip(clientX, clientY, content) {
+  function showTooltip(e, content) {
     var tt = document.createElement("div");
     tt.className = "CodeMirror-lint-tooltip";
     if (typeof content == "string") {
@@ -10,13 +10,13 @@
     tt.appendChild(content);
     document.body.appendChild(tt);
 
-    function position(clientX, clientY) {
+    function position(e) {
       if (!tt.parentNode) return CodeMirror.off(document, "mousemove", position);
-      tt.style.top = Math.max(0, clientY - tt.offsetHeight - 5) + "px";
-      tt.style.left = (clientX + 5) + "px";
+      tt.style.top = Math.max(0, e.clientY - tt.offsetHeight - 5) + "px";
+      tt.style.left = (e.clientX + 5) + "px";
     }
     CodeMirror.on(document, "mousemove", position);
-    position(clientX, clientY);
+    position(e);
     if (tt.style.opacity != null) tt.style.opacity = 1;
     return tt;
   }
@@ -30,8 +30,8 @@
     setTimeout(function() { rm(tt); }, 600);
   }
 
-  function showTooltipFor(clientX, clientY, content, node) {
-    var tooltip = showTooltip(clientX, clientY, content);
+  function showTooltipFor(e, content, node) {
+    var tooltip = showTooltip(e, content);
     function hide() {
       CodeMirror.off(node, "mouseout", hide);
       CodeMirror.off(node, "click", hide);
@@ -48,35 +48,33 @@
     CodeMirror.on(node, "click", hide);
   }
 
-  function TextHoverState(cm, options) {
+  function HyperlinkState(cm, options) {
     this.options = options;
     this.timeout = null;
     this.onMouseOver = function(e) { onMouseOver(cm, e); };
   }
 
   function parseOptions(cm, options) {
-    if (options instanceof Function) return {getTextHover: options};
+    if (options instanceof Function) return {getHyperlink: options};
     if (!options || options === true) options = {};
-    if (!options.getTextHover) options.getTextHover = cm.getHelper(CodeMirror.Pos(0, 0), "textHover");
-    if (!options.getTextHover) throw new Error("Required option 'getTextHover' missing (text-hover addon)");
+    if (!options.getHyperlink) options.getHyperlink = cm.getHelper(CodeMirror.Pos(0, 0), "hyperlink");
+    if (!options.getHyperlink) throw new Error("Required option 'getHyperlink' missing (hyêrlink addon)");
     return options;
   }
   
   function onMouseOver(cm, e) {
     var node = e.target || e.srcElement;
     if (node) {
-      var state = cm.state.textHover;
-      clearTimeout(state.timeout);
-      var clientX = e.clientX, clientY = e.clientY;
-      state.timeout = setTimeout(function(){show(cm, clientX, clientY, state, node);}, state.options.delay || 1000);            
+      var state = cm.state.hyperlink;      
+      var content = state.options.getHyperlink(cm, node, e);
+      if (content) {
+        showTooltipFor(e, content, node);
+      }
     }
   }
   
-  function show(cm, clientX, clientY, state, node) {
-  	var content = state.options.getTextHover(cm, node);
-    if (content) {
-      showTooltipFor(clientX, clientY, content, node);
-    }
+  function show() {
+  
   }
 
   function popupSpanTooltip(ann, e) {
@@ -87,16 +85,16 @@
   
   function optionHandler(cm, val, old) {
     if (old && old != CodeMirror.Init) {
-      CodeMirror.off(cm.getWrapperElement(), "mouseover", cm.state.textHover.onMouseOver);
-      delete cm.state.textHover;
+      CodeMirror.off(cm.getWrapperElement(), "mouseover", cm.state.hyperlink.onMouseOver);
+      delete cm.state.hyperlink;
     }
 
     if (val) {
-      var state = cm.state.textHover = new TextHoverState(cm, parseOptions(cm, val));
+      var state = cm.state.hyperlink = new HyperlinkState(cm, parseOptions(cm, val));
       CodeMirror.on(cm.getWrapperElement(), "mouseover", state.onMouseOver);
     }
   }
   
-  CodeMirror.defineOption("textHover", false, optionHandler); // deprecated
+  CodeMirror.defineOption("hyperlink", false, optionHandler); // deprecated
   
 })();

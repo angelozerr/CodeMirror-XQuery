@@ -3,73 +3,7 @@
 // released under the MIT license (../../LICENSE) like the rest of CodeMirror
 (function() {
   var Pos = CodeMirror.Pos;
-
-  // --------------- xquery module functions ---------------------
-
-  var defaultModulePrefixes = [];
-  var defaultModules = [];
-
-  var moduleNamespaces = [];
-  var modules = [];
-  var modulesNoNeedsPrefix = [];
-
-  function defineXQueryModule(module) {
-    if (module && module.namespace) {
-      if (module.prefix) {
-        defaultModulePrefixes.push(module.prefix);
-        defaultModules[module.prefix] = module;
-        if (module.prefixRequired == false) {
-          modulesNoNeedsPrefix.push(module);
-        }
-      } else {
-        moduleNamespaces.push(module.namespace);
-        modules[module.namespace] = module;
-      }
-    }
-  }
-  CodeMirror.defineXQueryModule = defineXQueryModule;
-
-  function findDefaultModuleByPrefix(prefix) {
-  	return defaultModules[prefix];
-  }
-  
-  function findModuleByPrefix(prefix, importedModules) {
-      var module = findDefaultModuleByPrefix(prefix);
-      if (!module) {
-        // search the declared module which checks the prefix
-        // ex import module namespace dls = "http://marklogic.com/xdmp/dls" at
-        // "/MarkLogic/dls.xqy";
-        // prefix=dls will retrieve the module "http://marklogic.com/xdmp/dls"
-        // at "/MarkLogic/dls.xqy";
-        var importedModule = getImportedModule(importedModules,
-            prefix);
-        // it exists an included module with the given prefix, search the
-        // module
-        // with the given namespace URI (ex:"http://marklogic.com/xdmp/dls").
-        module = findModuleByDeclaration(importedModule);
-      }
-      return module
-
-  }
-  CodeMirror.findModuleByPrefix = findModuleByPrefix;
-  
-  function findModuleByDeclaration(importedModule) {
-    if (importedModule && importedModule.namespace) {
-      var module = findModule(importedModule.namespace, importedModule.location);
-      if (module) {
-        return module;
-      }
-    }
-    return null;
-  }
-
-  function findModule(namespace, location) {
-    var module = modules[namespace];
-    if (module) {
-      return module;
-    }
-    return null;
-  }
+  var XQuery = CodeMirror.XQuery;
 
   // --------------- token utils ---------------------
 
@@ -244,29 +178,20 @@
           var to = Pos(data.from.line, data.to.ch);
           cm.replaceRange(importedModule.prefix, from, to);
         };
+        completion.info =  function(completion) {
+        	
+        }
         importedModule.completion = completion;
       }
       completions.push(completion);
     }
   }
 
-  function getImportedModule(importedModules, prefix) {
-    if (importedModules) {
-      for ( var i = 0; i < importedModules.length; i++) {
-        var importedModule = importedModules[i];
-        var name = importedModule.prefix;
-        if (name == prefix) {
-          return importedModule;
-        }
-      }
-    }
-    return null;
-  }
-
   function populateModuleNamespaces(s, quote, completions, editor, options) {
+    var moduleNamespaces = XQuery.getModuleNamespaces();
     for ( var i = 0; i < moduleNamespaces.length; i++) {
       var namespace = moduleNamespaces[i];
-      var module = modules[namespace];
+      var module = XQuery.findModuleByNamespace(namespace);//modules[namespace];
       populateNamespace(s, quote, module, completions);
     }
     // TODO : manage dynamicly the add module
@@ -281,9 +206,10 @@
     if (startsWithString(module.namespace, s)) {
       var completion = module.completion;
       if (!completion) {
+    	var className = startsWithString(module.namespace, 'java:') ? 'CodeMirror-hint-module-java' : 'CodeMirror-hint-module-xml';
         completion = {
           "text" : module.namespace,
-          "className" : "CodeMirror-hint-module-ns",
+          "className" : className,
           "module" : module
         };
         completion.hint = function(cm, data, completion) {
@@ -299,6 +225,26 @@
           to = Pos(data.from.line, length);
           cm.replaceRange(label, from, to);
         };
+        completion.info =  function(completion) {
+        	var module = completion.module;
+        	var html = ''
+        	html+='<b>';
+        	html+=module.namespace;
+        	html+='</b>';
+        	if(module.location) {
+        		html+='<br />';
+        		html+='Location : <b>';
+            	html+=module.location;
+            	html+='</b>';
+        	}
+        	if(module.resource) {
+        		html+='<br />';
+        		html+='Resource : <b>';
+            	html+=module.resource;
+            	html+='</b>';
+        	}
+        	return html;
+        }
         module.completion = completion;
       }
       completions.push(completion);
@@ -384,14 +330,16 @@
   }
 
   function populateDefaultModulePrefix(s, completions) {
+    var defaultModulePrefixes = XQuery.getDefaultModulePrefixes();
     for ( var i = 0; i < defaultModulePrefixes.length; i++) {
       var prefix = defaultModulePrefixes[i];
-      var module = findDefaultModuleByPrefix(prefix);
+      var module = XQuery.findDefaultModuleByPrefix(prefix);
       populateModulePrefix(s, module, completions);
     }
   }
 
   function populateModuleFunctionsNoNeedsPrefix(s, completions) {
+    var modulesNoNeedsPrefix = XQuery.getModulesNoNeedsPrefix();
     for ( var i = 0; i < modulesNoNeedsPrefix.length; i++) {
       populateModuleFunctions(modulesNoNeedsPrefix[i], null, s, completions)
     }
@@ -500,7 +448,7 @@
 
       if (prefix) {
         // test if it's default prefix
-        var module = findModuleByPrefix(prefix, token.state.importedModules);
+        var module = XQuery.findModuleByPrefix(prefix, token.state.importedModules);
         if (module) {
           populateModuleFunctions(module, prefix, funcName, completions);
         }

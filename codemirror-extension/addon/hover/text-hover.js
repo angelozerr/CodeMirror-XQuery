@@ -3,7 +3,7 @@
 
   function showTooltip(e, content) {
     var tt = document.createElement("div");
-    tt.className = "CodeMirror-lint-tooltip";
+    tt.className = "CodeMirror-hover-tooltip";
     if (typeof content == "string") {
     	content = document.createTextNode(content);
     }     

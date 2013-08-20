@@ -2,24 +2,25 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>CodeMirror: XQuery Auto-Folding Demo</title>
+    <title>CodeMirror: XQuery Folding Demo</title>
     
     <!-- CodeMirror -->
     <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
     <script src="../../codemirror/lib/codemirror.js"></script>    
     <link rel="stylesheet" href="../../codemirror/doc/docs.css">
     <link rel="stylesheet" href="../../codemirror/theme/xq-light.css">
-	
+
+	<!-- CodeMirror Fold -->
+	<script src="../../codemirror/addon/fold/foldcode.js"> </script>
+	<script src="../../codemirror/addon/fold/foldgutter.js"> </script>	
 	<script src="../../codemirror/addon/fold/brace-fold.js"></script>  
 	<script src="../../codemirror/addon/fold/xml-fold.js"></script>
+	<script src="../../codemirror/addon/fold/comment-fold.js"></script>
 
  	<!-- CodeMirror Extension -->  
-	<script src="../../codemirror-extension/addon/fold/comment-fold.js"></script>            
-	<script src="../../codemirror-extension/addon/fold/autofolding.js"></script>
-	<link rel="stylesheet" href="../../codemirror-extension/addon/fold/autofolding.css">	  
+	<link rel="stylesheet" href="../../codemirror-extension/addon/fold/folding-eclipse.css">	  
    	    
     <!-- CodeMirror-XQuery -->
-	<script src="../addon/fold/autofolding-xquery.js"></script>
     <script src="../mode/xquery/xquery.js"></script>
 
     <style type="text/css">
@@ -29,7 +30,7 @@
     </style>    
   </head>
   <body>
-    <h1>CodeMirror: XQuery Auto-Folding demo</h1>
+    <h1>CodeMirror: XQuery Folding demo</h1>
 
     <form><textarea id="code" name="code">
 xquery version "1.0-ml";
@@ -248,17 +249,14 @@ declare function oauth2:loginAsMarkLogicUser($username)
 };</textarea>
 </form>
 
-<p>Press <strong>ctrl-space, ':', '$'</strong> to activate autocompletion for variables (let, variable, for, module) and functions (<strong>oauth2:, map:,xdmp:</strong>). See
-the code (<a href="../addon/hint/show-hint.js">here</a>
-and <a href="../addon/hint/xquery/xquery-hint.js">here</a>) to figure out
-how it works.</p>
-
     <script>      
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
         lineNumbers: true,
         theme: "xq-light",
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-folding-markers"],
-        foldingWith: CodeMirror.xqueryFolding
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        foldGutter: {
+            rangeFinder : new CodeMirror.fold.combine(CodeMirror.fold.brace, CodeMirror.fold.comment, CodeMirror.fold.xml)
+        }
       });
     </script>
   </body>

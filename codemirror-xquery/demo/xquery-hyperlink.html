@@ -243,10 +243,7 @@ declare function oauth2:loginAsMarkLogicUser($username)
 };</textarea>
 </form>
 
-<p>Press <strong>ctrl-space, ':', '$'</strong> to activate autocompletion for variables (let, variable, for, module) and functions (<strong>oauth2:, map:,xdmp:</strong>). See
-the code (<a href="../addon/hint/show-hint.js">here</a>
-and <a href="../addon/hint/xquery/xquery-hint.js">here</a>) to figure out
-how it works.</p>
+<p>Press <strong>ctrl-clic or F4</strong> to open XQuery module</p>
 
     <script>
       
@@ -255,23 +252,20 @@ how it works.</p>
 	  // completion for map module
 	  CodeMirror.XQuery.defineModule({"prefix":"map","namespace":"http://marklogic.com/xdmp/map","functions":[{"name":"clear","as":"empty-sequence()","params":[{"name":"map","as":"map:map"}]},{"name":"count","as":"xs:unsignedInt","params":[{"name":"map","as":"map:map"}]},{"name":"delete","as":"empty-sequence()","params":[{"name":"map","as":"map:map"},{"name":"key","as":"xs:string"}]},{"name":"get","as":"item()*","params":[{"name":"map","as":"map:map"},{"name":"key","as":"xs:string"}]},{"name":"keys","as":"xs:string*","params":[{"name":"map","as":"map:map"}]},{"name":"map","as":"map:map","params":[{"name":"map","as":"element(map:map)"}]},{"name":"map","as":"map:map"},{"name":"put","as":"empty-sequence()","params":[{"name":"map","as":"map:map"},{"name":"key","as":"xs:string"},{"name":"value","as":"item()*"}]}]});
 	 
-      function open(ns, loc) {
-	  	alert(ns + ' ' + loc);
+      function myOpenFunc(namespace, location, funcName, resource) {
+	  	alert(namespace + ' ' + location+ ' ' +funcName + ' ' + resource);
       }
-      CodeMirror.commands.hyperlink = function(cm) {
-	  	CodeMirror.XQuery.jumpToDef(cm, open) 
-		return CodeMirror.Pass;
-	  }
-      
-      
+
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
         lineNumbers: true,
         theme: "xq-light",
         extraKeys: {
-            "Ctrl-F3": "hyperlink"
+            "F4": "xqueryHyperlinkProcessor"
         },
-        hyperlink: true
-      });
-    </script>
+        hyperlink: {
+            processor: "xqueryHyperlinkProcessor",
+        	open : myOpenFunc
+	    }});
+		</script>
   </body>
 </html>

@@ -618,7 +618,7 @@ window.CodeMirror = (function() {
       if (nextIntact && nextIntact.to == lineN) nextIntact = intact.shift();
       if (lineIsHidden(cm.doc, line)) {
         if (line.height != 0) updateLineHeight(line, 0);
-        if (line.widgets && cur.previousSibling) for (var i = 0; i < line.widgets.length; ++i) {
+        if (line.widgets && cur && cur.previousSibling) for (var i = 0; i < line.widgets.length; ++i) {
           var w = line.widgets[i];
           if (w.showIfHidden) {
             var prev = cur.previousSibling;
@@ -1800,17 +1800,16 @@ window.CodeMirror = (function() {
     on(document, "mouseup", up);
   }
 
-  function clickInGutter(cm, e) {
-    var display = cm.display;
+  function gutterEvent(cm, e, type, prevent, signalfn) {
     try { var mX = e.clientX, mY = e.clientY; }
     catch(e) { return false; }
+    if (mX >= Math.floor(getRect(cm.display.gutters).right)) return false;
+    if (prevent) e_preventDefault(e);
 
-    if (mX >= Math.floor(getRect(display.gutters).right)) return false;
-    e_preventDefault(e);
-    if (!hasHandler(cm, "gutterClick")) return true;
-
+    var display = cm.display;
     var lineBox = getRect(display.lineDiv);
-    if (mY > lineBox.bottom) return true;
+
+    if (mY > lineBox.bottom || !hasHandler(cm, type)) return e_defaultPrevented(e);
     mY -= lineBox.top - display.viewOffset;
 
     for (var i = 0; i < cm.options.gutters.length; ++i) {
@@ -1818,11 +1817,19 @@ window.CodeMirror = (function() {
       if (g && getRect(g).right >= mX) {
         var line = lineAtHeight(cm.doc, mY);
         var gutter = cm.options.gutters[i];
-        signalLater(cm, "gutterClick", cm, line, gutter, e);
-        break;
+        signalfn(cm, type, cm, line, gutter, e);
+        return e_defaultPrevented(e);
       }
     }
-    return true;
+  }
+
+  function contextMenuInGutter(cm, e) {
+    if (!hasHandler(cm, "gutterContextMenu")) return false;
+    return gutterEvent(cm, e, "gutterContextMenu", false, signal);
+  }
+
+  function clickInGutter(cm, e) {
+    return gutterEvent(cm, e, "gutterClick", true, signalLater);
   }
 
   // Kludge to work around strange IE behavior where it'll sometimes
@@ -2143,7 +2150,7 @@ window.CodeMirror = (function() {
   function onContextMenu(cm, e) {
     if (signalDOMEvent(cm, e, "contextmenu")) return;
     var display = cm.display, sel = cm.doc.sel;
-    if (eventInWidget(display, e)) return;
+    if (eventInWidget(display, e) || contextMenuInGutter(cm, e)) return;
 
     var pos = posFromMouse(cm, e), scrollPos = display.scroller.scrollTop;
     if (!pos || opera) return; // Opera is difficult.
@@ -2162,8 +2169,8 @@ window.CodeMirror = (function() {
 
     function prepareSelectAllHack() {
       if (display.input.selectionStart != null) {
-        var extval = display.input.value = " " + (posEq(sel.from, sel.to) ? "" : display.input.value);
-        display.prevInput = " ";
+        var extval = display.input.value = "\u200b" + (posEq(sel.from, sel.to) ? "" : display.input.value);
+        display.prevInput = "\u200b";
         display.input.selectionStart = 1; display.input.selectionEnd = extval.length;
       }
     }
@@ -5821,7 +5828,7 @@ window.CodeMirror = (function() {
 
   // THE END
 
-  CodeMirror.version = "3.15.1";
+  CodeMirror.version = "3.16.1";
 
   return CodeMirror;
 })();

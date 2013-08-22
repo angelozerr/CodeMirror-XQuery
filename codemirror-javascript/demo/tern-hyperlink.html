@@ -2,24 +2,18 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>CodeMirror: Javascript - Lint + Hint with Tern demo</title>
+    <title>CodeMirror: Javascript - Hint with Tern demo</title>
     
     <!-- CodeMirror -->
     <link rel="stylesheet" href="../../codemirror/lib/codemirror.css">
     <script src="../../codemirror/lib/codemirror.js"></script>
     <link rel="stylesheet" href="../../codemirror/theme/eclipse.css">
-    <script src="../../codemirror/addon/hint/show-hint.js"></script>
     <script src="../../codemirror/addon/edit/closetag.js"></script>
     <script src="../../codemirror/addon/edit/closebrackets.js"></script>    
     <script src="../../codemirror/addon/edit/matchbrackets.js"></script>
     <script src="../../codemirror/addon/selection/active-line.js"></script>
     <script src="../../codemirror/addon/runmode/runmode.js"></script>
-        
     <script src="../../codemirror/mode/javascript/javascript.js"></script>    
-	<script src="../../jshint/jshint-r12-80277ef.js"></script>
-	<script src="../../codemirror/addon/lint/lint.js"></script>
-    <link rel="stylesheet" href="../../codemirror/addon/lint/lint.css">
-	<script src="../../codemirror/addon/lint/javascript-lint.js"></script>
 
   <!-- Tern JS -->
   <script src="../../ternjs/acorn/acorn.js"></script>
@@ -42,24 +36,20 @@
 
   <!-- CodeMirror Extension -->  
   
-  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-hint-eclipse.css">
-  <script src="../../codemirror-extension/addon/hint/show-context-info.js"></script>
-  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/show-context-info.css">
-  
-  <link rel="stylesheet" href="../../codemirror-extension/addon/hint/templates-hint.css">
-  <script src="../../codemirror-extension/addon/hint/templates-hint.js"></script>
+  <link rel="stylesheet" href="../../codemirror-extension/addon/hyperlink/hyperlink.css">
+  <script src="../../codemirror-extension/addon/hyperlink/hyperlink.js"></script>
   
   <!-- CodeMirror Javascript -->
-  <script src="../addon/hint/javascript/javascript-templates.js"></script>
+  <script src="../addon/hint/tern/tern-hyperlink.js"></script>
   		          
     <link rel="stylesheet" href="../../codemirror/doc/docs.css">
   </head>
   <body>
     
-    <h1>Javascript - Lint + Hint with Tern demo</h1>
-    <div>This demo shows in action the lint feature and a powerfull hint with Javascript by using <a href="http://ternjs.net/" >Tern</a>. 
+    <h1>Javascript - Hint with Tern demo</h1>
+    <div>This demo shows in action a powerfull hint with Javascript by using <a href="http://ternjs.net/" >Tern</a>. 
     If you press Ctrl+Space a hint panel show the code suggest. </br>
-    It uses 3 CodeMirror addons :
+    It uses 2 CodeMirror addons :
     </div>
     <ul>
       <li><a href="#" >"Official CodeMirror" addon/tern/tern.js</a> is a CodeMirror addon to use Tern (completion about variables, methodes etc).
@@ -72,26 +62,15 @@
     </ul>
 
     <form><textarea id="code" name="code">var arr = [];
-arr. // do Ctrl+Space here to open completion with array method. It uses the CodeMirror Tern addon
-for // do Ctrl+Space here to open templates (snippet). It uses the CodeMirror Javascript templates addon
+    var a = []
+a.
 </textarea></form>
     <script type="text/javascript">
        
-      function passAndHint(cm) {
-     	setTimeout(function() {cm.execCommand("autocomplete");}, 100);
-      	return CodeMirror.Pass;
+      function myOpenFunc() {
+      	alert('e');
       }
-       
       
-      
-      function myHint(cm) {
-      	return CodeMirror.showHint(cm, CodeMirror.ternHint, {async: true}); 
-      }
-     
-      CodeMirror.commands.autocomplete = function(cm) {
-        CodeMirror.showHint(cm, myHint);
-      }
-        
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
         mode: 'application/javascript',
         theme : "eclipse",
@@ -101,17 +80,14 @@ for // do Ctrl+Space here to open templates (snippet). It uses the CodeMirror Ja
         autoCloseBrackets: true,
         matchBrackets: true,
         extraKeys: {
-         	"'.'": passAndHint,
-        	"Ctrl-Space": "autocomplete",
-        	"Ctrl-I": function(cm) { CodeMirror.tern.showType(cm); },
-  	        "Alt-.": function(cm) { CodeMirror.tern.jumpToDef(cm); },
-	        "Alt-,": function(cm) { CodeMirror.tern.jumpBack(cm); },
-	        "Ctrl-Q": function(cm) { CodeMirror.tern.rename(cm); }
+            "F4": "ternHyperlinkProcessor"
         },
-        gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
-    	lintWith: CodeMirror.javascriptValidator
+        hyperlink: {
+            processor: "ternHyperlinkProcessor",
+        	open : myOpenFunc
+	    },
+        gutters: ["CodeMirror-linenumbers"]
       });
     </script>
-    
   </body>
 </html>

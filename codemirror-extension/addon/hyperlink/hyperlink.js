@@ -1,6 +1,6 @@
 (function() {
     "use strict";
-    
+
     function HyperlinkState(cm, options) {
 	this.options = options;
 	this.hasHyperlink = options.getHyperlink().hasHyperlink;
@@ -17,13 +17,21 @@
     }
 
     function parseOptions(cm, options) {
-      if (options instanceof Function) return {getHyperlink: options};
-      if (!options || options === true) options = {};
-      if (!options.getHyperlink) options.getHyperlink = cm.getHelper(CodeMirror.Pos(0, 0), "hyperlink");
-      if (!options.getHyperlink) throw new Error("Required option 'getHyperlink' missing (hyperlink addon)");
-      return options;
+	if (options instanceof Function)
+	    return {
+		getHyperlink : options
+	    };
+	if (!options || options === true)
+	    options = {};
+	if (!options.getHyperlink)
+	    options.getHyperlink = cm.getHelper(CodeMirror.Pos(0, 0),
+		    "hyperlink");
+	if (!options.getHyperlink)
+	    throw new Error(
+		    "Required option 'getHyperlink' missing (hyperlink addon)");
+	return options;
     }
-    
+
     function onKeyUp(cm, e) {
 	disable(cm)
     }
@@ -34,7 +42,7 @@
 	    return;
 	var node = e.target || e.srcElement;
 	if (node) {
-	    var state = cm.state.hyperlink;	    
+	    var state = cm.state.hyperlink;
 	    var hasHyperlink = state.hasHyperlink(cm, node, e);
 	    if (hasHyperlink) {
 		state.node = node;
@@ -44,12 +52,13 @@
     }
 
     function onClick(cm, e) {
-	var state = cm.state.hyperlink;	 
+	var state = cm.state.hyperlink;
 	if (state.node) {
 	    state.processHyperlink(cm, state.node, e);
+	    disable(cm);
 	}
     }
-    
+
     function disable(cm) {
 	var state = cm.state.hyperlink;
 	var node = state.node;
@@ -69,7 +78,7 @@
 	    CodeMirror.off(cm.getWrapperElement(), "mousemove",
 		    state.onMouseOver);
 	    CodeMirror.off(cm.getWrapperElement(), "keyup", state.onKeyUp);
-	    CodeMirror.off(cm, "cursorActivity", state.onClick);	    
+	    CodeMirror.off(cm, "cursorActivity", state.onClick);
 	    delete cm.state.hyperlink;
 	}
 

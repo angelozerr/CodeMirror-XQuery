@@ -73,16 +73,6 @@
     }
   }
   
-  function show() {
-  
-  }
-
-  function popupSpanTooltip(ann, e) {
-    var target = e.target || e.srcElement;
-    alert(ann);
-   // showTooltipFor(e, annotationTooltip(ann), target);
-  }
-  
   function optionHandler(cm, val, old) {
     if (old && old != CodeMirror.Init) {
       CodeMirror.off(cm.getWrapperElement(), "mouseover", cm.state.textHover.onMouseOver);

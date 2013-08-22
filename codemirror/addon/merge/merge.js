@@ -31,9 +31,17 @@
       this.diff = getDiff(orig, options.value);
       this.diffOutOfDate = false;
 
+      this.showDifferences = options.showDifferences !== false;
       this.forceUpdate = registerUpdate(this);
       setScrollLock(this, true, false);
       registerScroll(this);
+    },
+    setShowDifferences: function(val) {
+      val = val !== false;
+      if (val != this.showDifferences) {
+        this.showDifferences = val;
+        this.forceUpdate("full");
+      }
     }
   };
 
@@ -41,13 +49,22 @@
     var edit = {from: 0, to: 0, marked: []};
     var orig = {from: 0, to: 0, marked: []};
     var debounceChange;
-    function update() {
+    function update(mode) {
+      if (mode == "full") {
+        if (dv.svg) clear(dv.svg);
+        clear(dv.copyButtons);
+        clearMarks(dv.edit, edit.marked, dv.classes);
+        clearMarks(dv.orig, orig.marked, dv.classes);
+        edit.from = edit.to = orig.from = orig.to = 0;
+      }
       if (dv.diffOutOfDate) {
         dv.diff = getDiff(dv.orig.getValue(), dv.edit.getValue());
         dv.diffOutOfDate = false;
       }
-      updateMarks(dv.edit, dv.diff, edit, DIFF_INSERT, dv.classes);
-      updateMarks(dv.orig, dv.diff, orig, DIFF_DELETE, dv.classes);
+      if (dv.showDifferences) {
+        updateMarks(dv.edit, dv.diff, edit, DIFF_INSERT, dv.classes);
+        updateMarks(dv.orig, dv.diff, orig, DIFF_DELETE, dv.classes);
+      }
       drawConnectors(dv);
     }
     function set(slow) {
@@ -211,6 +228,8 @@
   // Updating the gap between editor and original
 
   function drawConnectors(dv) {
+    if (!dv.showDifferences) return;
+
     if (dv.svg) {
       clear(dv.svg);
       var w = dv.gap.offsetWidth;
@@ -322,7 +341,11 @@
     constuctor: MergeView,
     editor: function() { return this.edit; },
     rightOriginal: function() { return this.right && this.right.orig; },
-    leftOriginal: function() { return this.left && this.left.orig; }
+    leftOriginal: function() { return this.left && this.left.orig; },
+    setShowDifferences: function(val) {
+      if (this.right) this.right.setShowDifferences(val);
+      if (this.left) this.left.setShowDifferences(val);
+    }
   };
 
   // Operations on diffs

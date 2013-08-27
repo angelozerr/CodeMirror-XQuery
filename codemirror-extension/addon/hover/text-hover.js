@@ -1,6 +1,8 @@
 (function() {
   "use strict";
 
+  var HOVER_CLASS = " CodeMirror-hover";
+  
   function showTooltip(e, content) {
     var tt = document.createElement("div");
     tt.className = "CodeMirror-hover-tooltip";
@@ -35,8 +37,7 @@
     function hide() {
       CodeMirror.off(node, "mouseout", hide);
       CodeMirror.off(node, "click", hide);
-      node.className = node.className.substring(0, node.className.length
-          - ' CodeMirror-hover'.length);
+      node.className = node.className.replace(HOVER_CLASS, "");
       if (tooltip) { hideTooltip(tooltip); tooltip = null; }
     }
     var poll = setInterval(function() {
@@ -70,7 +71,7 @@
       var state = cm.state.textHover;
       var content = state.options.getTextHover(cm, e);
       if (content) {
-        node.className += ' CodeMirror-hover'
+        node.className += HOVER_CLASS;
         //clearTimeout(state.timeout);
         //state.timeout = setTimeout(function() {showTooltipFor(e, content, node, state);}, 300);
         showTooltipFor(e, content, node, state);

@@ -1,4 +1,4 @@
-CodeMirror.registerHelper("textHover", "xquery", function(cm, node, e) {
+CodeMirror.registerHelper("textHover", "xquery", function(cm, e) {
   var token = cm.findTokenAt(e);
   if (!token)
     return;

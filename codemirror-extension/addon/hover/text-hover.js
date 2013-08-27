@@ -31,14 +31,13 @@
   }
 
   function showTooltipFor(e, content, node, state) {
-    if (state.node != node) return;
     var tooltip = showTooltip(e, content);
     function hide() {
       CodeMirror.off(node, "mouseout", hide);
       CodeMirror.off(node, "click", hide);
       node.className = node.className.substring(0, node.className.length
           - ' CodeMirror-hover'.length);
-      if (tooltip) { hideTooltip(tooltip); if (state.node === node) state.node = node; tooltip = null; }
+      if (tooltip) { hideTooltip(tooltip); tooltip = null; }
     }
     var poll = setInterval(function() {
       if (tooltip) for (var n = node;; n = n.parentNode) {
@@ -69,8 +68,7 @@
     var node = e.target || e.srcElement;
     if (node) {
       var state = cm.state.textHover;
-      state.node = node;
-      var content = state.options.getTextHover(cm, node, e);
+      var content = state.options.getTextHover(cm, e);
       if (content) {
         node.className += ' CodeMirror-hover'
         //clearTimeout(state.timeout);
@@ -92,24 +90,12 @@
     }
   }
 
-  function isTokenType(type, typeToSearch) {
-    if (!type)
-      return false;
-    return type.indexOf(typeToSearch) != -1;
-  }
-  CodeMirror.isTokenType = isTokenType;
-
-  function findTokenAt(cm, pos, types) {
-    var type = cm.getTokenTypeAt(pos);
-    if (type) {
-      if (!types)
-        return cm.getTokenAt(pos);
-      for ( var j = 0; j < types.length; j++) {
-        if (isTokenType(type, types[j])) {
-          return cm.getTokenAt(pos);
-        }
-      }
+  function findTokenAt(cm, pos, text) {
+    var token = cm.getTokenAt(pos);
+    if (token && token.string === text) {
+      return token;
     }
+    return null;
   }
 
   // When the mouseover fires, the cursor might not actually be over
@@ -117,14 +103,14 @@
   // probe a few nearby points when no suitable marked range is found.
   var nearby = [ 0, 0, 0, 5, 0, -5, 5, 0, -5, 0 ];
 
-  CodeMirror.defineExtension("findTokenAt", function(e, types) {
-    var cm = this;
+  CodeMirror.defineExtension("findTokenAt", function(e) {
+    var cm = this, node = e.target || e.srcElement, text = node.innerText || node.textContent;
     for ( var i = 0; i < nearby.length; i += 2) {
       var pos = cm.coordsChar({
         left : e.clientX + nearby[i],
         top : e.clientY + nearby[i + 1]
       });
-      var token = findTokenAt(cm, pos, types);
+      var token = findTokenAt(cm, pos, text);
       if (token) return token;
     }
   });

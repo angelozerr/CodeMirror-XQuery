@@ -274,13 +274,6 @@ how it works.</p>
         textHover: true
       });
       
-      CodeMirror.on(editor.getWrapperElement(), "mouseover", function(e, cm) {       
-          var pos = editor.coordsChar({left: e.clientX, top: e.clientY});
-          var token = editor.getTokenAt(pos);
-          console.log("hover at", pos.line, ",", pos.ch, ",token=", token.string);
-        }
-      );
-      
     </script>
   </body>
 </html>

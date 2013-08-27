@@ -36,8 +36,6 @@
     function hide() {
       CodeMirror.off(node, "mouseout", hide);
       CodeMirror.off(node, "click", hide);
-      node.className = node.className.substring(0, node.className.length
-          - ' CodeMirror-hover'.length);
       if (tooltip) { hideTooltip(tooltip); if (state.node === node) state.node = node; tooltip = null; }
     }
     var poll = setInterval(function() {
@@ -71,11 +69,9 @@
       var state = cm.state.textHover;
       state.node = node;
       var content = state.options.getTextHover(cm, node, e);
-      if (content) {
-        node.className += ' CodeMirror-hover'
-        //clearTimeout(state.timeout);
-        //state.timeout = setTimeout(function() {showTooltipFor(e, content, node, state);}, 300);
-        showTooltipFor(e, content, node, state);
+      if (content) {        
+        clearTimeout(state.timeout);
+        state.timeout = setTimeout(function() {showTooltipFor(e, content, node, state);}, 300);
       }
     }
   }

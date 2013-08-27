@@ -451,6 +451,9 @@ CodeMirror.defineMode("xquery", function(config) {
       if(scope != null) {
       	var varname = stream.current();
         register(varname, state, scope);
+        if (PARAM_SCOPE === scope) {
+          return ret(scope, "variable-2");
+        }
         return ret(scope, "variable");
       }    
     }

@@ -8,7 +8,6 @@
   overflow: hidden;
   padding: 2px 5px;
   position: fixed;
-  white-space: pre;
   z-index: 100;
   max-width: 600px;
   opacity: 0;

@@ -91,14 +91,6 @@
     }
   }
 
-  function findTokenAt(cm, pos, text) {
-    var token = cm.getTokenAt(pos);
-    if (token && token.string === text) {
-      return token;
-    }
-    return null;
-  }
-
   // When the mouseover fires, the cursor might not actually be over
   // the character itself yet. These pairs of x,y offsets are used to
   // probe a few nearby points when no suitable marked range is found.
@@ -111,8 +103,10 @@
         left : e.clientX + nearby[i],
         top : e.clientY + nearby[i + 1]
       });
-      var token = findTokenAt(cm, pos, text);
-      if (token) return token;
+      var token = cm.getTokenAt(pos);
+      if (token && token.string === text) {
+        return token;
+      }
     }
   });
 

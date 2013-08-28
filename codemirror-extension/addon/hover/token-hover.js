@@ -1,5 +1,5 @@
-CodeMirror.registerHelper("textHover", "javascript", function(cm, e) {
-  var html = 'token null', token = cm.findTokenAt(e);
+CodeMirror.registerHelper("textHover", "javascript", function(cm, token, e) {
+  var html = 'token null';
   if (token) {
     var node = e.target || e.srcElement
     html = 'node.innerText: ' + (node.innerText || node.textContent);

@@ -57,10 +57,10 @@
     }
   }
 
-  function getHyperlink(cm, pos) {
-    var token = cm.getTokenAt(pos);
-    if (!token)
+  function getHyperlink(cm, tp) {
+    if (!tp)
       return;
+    var token = tp.token, pos = tp.pos;
     switch (token.type) {
     case "variable def":
       var state = token.state, openExternal = cm.options.hyperlink.open;
@@ -114,7 +114,7 @@
     }
   }
 
-  CodeMirror.registerHelper("hyperlink", "xquery", function(cm, pos) {
-    return getHyperlink(cm, pos)
+  CodeMirror.registerHelper("hyperlink", "xquery", function(cm, tp) {
+    return getHyperlink(cm, tp)
   });
 })();

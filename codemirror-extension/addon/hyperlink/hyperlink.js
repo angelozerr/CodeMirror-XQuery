@@ -46,11 +46,8 @@
       if (node === state.node)
         return;
       disable(cm);
-      var pos = cm.coordsChar({
-        left : e.clientX,
-        top : e.clientY
-      });
-      var hyperlink = state.options.getHyperlink(cm, pos);
+      var tp = getTokenAndPosAt(cm, e);
+      var hyperlink = state.options.getHyperlink(cm, tp);
       if (hyperlink) {
         state.node = node;
         state.hyperlink = hyperlink;
@@ -104,12 +101,39 @@
   }
 
   CodeMirror.commands.hyperlink = function(cm) {
-    var hyperlink = cm.state.hyperlink.options.getHyperlink(cm, cm.getCursor());
+    var pos = cm.getCursor(), token = cm.getTokenAt(pos);
+    var hyperlink = cm.state.hyperlink.options.getHyperlink(cm, {
+      token : token,
+      pos : pos
+    });
     if (hyperlink) {
       hyperlink.open();
     }
   }
-  
+
+  // When the mouseover fires, the cursor might not actually be over
+  // the character itself yet. These pairs of x,y offsets are used to
+  // probe a few nearby points when no suitable marked range is found.
+  var nearby = [ 0, 0, 0, 5, 0, -5, 5, 0, -5, 0 ];
+
+  function getTokenAndPosAt(cm, e) {
+    var node = e.target || e.srcElement, text = node.innerText
+        || node.textContent;
+    for ( var i = 0; i < nearby.length; i += 2) {
+      var pos = cm.coordsChar({
+        left : e.clientX + nearby[i],
+        top : e.clientY + nearby[i + 1]
+      });
+      var token = cm.getTokenAt(pos);
+      if (token && token.string === text) {
+        return {
+          token : token,
+          pos : pos
+        };
+      }
+    }
+  }
+
   CodeMirror.defineOption("hyperlink", false, optionHandler); // deprecated
 
 })();

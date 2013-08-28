@@ -93,8 +93,8 @@
   function onMouseOver(cm, e) {
     var node = e.target || e.srcElement;
     if (node) {
-      var state = cm.state.textHover, token = getTokenAt(cm, e);
-      var content = state.options.getTextHover(cm, token, e);
+      var state = cm.state.textHover, tp = getTokenAndPosAt(cm, e);
+      var content = state.options.getTextHover(cm, tp, e);
       if (content) {
         node.className += HOVER_CLASS;
         // clearTimeout(state.timeout);
@@ -124,7 +124,7 @@
   // probe a few nearby points when no suitable marked range is found.
   var nearby = [ 0, 0, 0, 5, 0, -5, 5, 0, -5, 0 ];
 
-  function getTokenAt(cm, e) {
+  function getTokenAndPosAt(cm, e) {
     var node = e.target || e.srcElement, text = node.innerText
         || node.textContent;
     for ( var i = 0; i < nearby.length; i += 2) {
@@ -134,7 +134,10 @@
       });
       var token = cm.getTokenAt(pos);
       if (token && token.string === text) {
-        return token;
+        return {
+          token : token,
+          pos : pos
+        };
       }
     }
   }

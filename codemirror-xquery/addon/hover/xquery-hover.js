@@ -1,7 +1,7 @@
-CodeMirror.registerHelper("textHover", "xquery", function(cm, token) {
-  if (!token)
+CodeMirror.registerHelper("textHover", "xquery", function(cm, tp) {
+  if (!tp)
     return;
-
+  var token = tp.token;
   function getHtml(module, funcName, prefix) {
     var functions = module.functions;
     for ( var i = 0; i < functions.length; i++) {

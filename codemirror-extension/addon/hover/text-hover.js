@@ -93,8 +93,8 @@
   function onMouseOver(cm, e) {
     var node = e.target || e.srcElement;
     if (node) {
-      var state = cm.state.textHover, tp = getTokenAndPosAt(cm, e);
-      var content = state.options.getTextHover(cm, tp, e);
+      var state = cm.state.textHover, data = getTokenAndPosAt(cm, e);
+      var content = state.options.getTextHover(cm, data, e);
       if (content) {
         node.className += HOVER_CLASS;
         // clearTimeout(state.timeout);

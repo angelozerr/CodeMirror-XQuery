@@ -19,6 +19,7 @@
     <!-- CodeMirror-XQuery -->        
     <script src="../addon/xquery-commons.js"></script>
     <script src="../addon/hover/xquery-hover.js"></script>
+    <link rel="stylesheet" href="../addon/hover/xquery-hover.css">
     <script src="../addon/hint/system-functions.xml.js"></script>
     <script src="../mode/xquery/xquery.js"></script>
     
@@ -271,7 +272,9 @@ how it works.</p>
             "'$'": passAndHint,
             "Ctrl-Space": "autocomplete"
         },
-        textHover: true
+        textHover: {
+          delay: 500
+        }
       });
       
     </script>

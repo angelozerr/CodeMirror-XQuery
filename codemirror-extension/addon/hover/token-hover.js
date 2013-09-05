@@ -1,7 +1,7 @@
-CodeMirror.registerHelper("textHover", "javascript", function(cm, data, e) {
+CodeMirror.registerHelper("textHover", "javascript", function(cm, data, node) {
   var html = 'token null';
   if (data) {
-    var token = data.token, node = e.target || e.srcElement
+    var token = data.token;
     html = 'node.innerText: ' + (node.innerText || node.textContent);
     html += '</br>node.className: ' + node.className;
     html += '</br>className: ' + token.className;

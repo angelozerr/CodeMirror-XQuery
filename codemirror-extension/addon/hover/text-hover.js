@@ -39,7 +39,7 @@
     }, 600);
   }
 
-  function showTooltipFor(e, content, node, state) {
+  function showTooltipFor(e, content, node, state, cm) {
     var tooltip = showTooltip(e, content);
     function hide() {
       CodeMirror.off(node, "mouseout", hide);
@@ -49,6 +49,7 @@
         hideTooltip(tooltip);
         tooltip = null;
       }
+      cm.removeKeyMap(state.keyMap);
     }
     var poll = setInterval(function() {
       if (tooltip)
@@ -65,14 +66,23 @@
     }, 400);
     CodeMirror.on(node, "mouseout", hide);
     CodeMirror.on(node, "click", hide);
+    state.keyMap = {Esc: hide};
+    cm.addKeyMap(state.keyMap);
   }
 
   function TextHoverState(cm, options) {
     this.options = options;
     this.timeout = null;
-    this.onMouseOver = function(e) {
-      onMouseOver(cm, e);
-    };
+    if (options.delay) {
+      this.onMouseOver = function(e) {
+        onMouseOverWithDelay(cm, e);
+      };
+    } else {
+      this.onMouseOver = function(e) {
+        onMouseOver(cm, e);
+      };
+    }
+    this.keyMap = null;
   }
 
   function parseOptions(cm, options) {
@@ -90,6 +100,17 @@
     return options;
   }
 
+  function onMouseOverWithDelay(cm, e) {
+    var state = cm.state.textHover, delay = state.options.delay;
+    clearTimeout(state.timeout);
+    if (e.srcElement) {
+    	// hack for IE, because e.srcElement failed when it is used in the tiemout function
+    	var newE = {srcElement: e.srcElement, clientX : e.clientX, clientY: e.clientY};
+    	e = newE;
+    }
+    state.timeout = setTimeout(function() {onMouseOver(cm, e);}, delay);
+  }
+
   function onMouseOver(cm, e) {
     var node = e.target || e.srcElement;
     if (node) {
@@ -97,10 +118,7 @@
       var content = state.options.getTextHover(cm, data, e);
       if (content) {
         node.className += HOVER_CLASS;
-        // clearTimeout(state.timeout);
-        // state.timeout = setTimeout(function() {showTooltipFor(e, content,
-        // node, state);}, 300);
-        showTooltipFor(e, content, node, state);
+        showTooltipFor(e, content, node, state, cm);
       }
     }
   }

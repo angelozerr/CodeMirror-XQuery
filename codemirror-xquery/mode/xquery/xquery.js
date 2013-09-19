@@ -128,7 +128,9 @@ CodeMirror.defineMode("xquery", function(config) {
         updateFunctionDeclBracket(state, 1);
         pushContext(state, state.functionDecl == null)
       }
-      pushStateStack(state,{ type: "codeblock"});
+      if (!isInXmlConstructor(state)) {      
+        pushStateStack(state,{ type: "codeblock"});
+      }
       return ret("", null);
     }
     // end code block
@@ -237,7 +239,7 @@ CodeMirror.defineMode("xquery", function(config) {
       // as previously checked, if the word is element,attribute, axis specifier, call it an "xmlconstructor" and 
       // push the stack so we know to look for it on the next word
       if(word == "element" || word == "attribute" || known.type == "axis_specifier") {
-    	  pushStateStack(state, {type: "xmlconstructor"});    	
+        if (state.lastType != "as") pushStateStack(state, {type: "xmlconstructor"});    	
       } else {
         if (trackContext) {
           if(functionCall && state.lastType == "function") {

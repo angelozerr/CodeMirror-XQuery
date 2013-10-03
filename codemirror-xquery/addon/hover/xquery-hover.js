@@ -1,31 +1,44 @@
 (function() {
   "use strict";
 
-  function getHtml(module, funcName, prefix) {
-    var functions = module.functions;
+  function getHtmlOfFunction(module, f, prefix) {
+	  var className = startsWithString(module.namespace, 'java:') ? 'CodeMirror-hover-module-java' : 'CodeMirror-hover-module-xml';
+      var html = '';
+      html +='<span class="';
+      html +=className;
+      html +='">&nbsp;</span>';
+      html += '<b>';
+      html += getSignature(prefix, f);
+      html += '</b>';
+      if (f.doc) {
+        if (html != '') {
+          html += '<br/>';
+        }
+        html += f.doc;
+      }
+      if (module.resource) {
+        html += '<br/>File: ' + module.resource;
+      }
+      return html;
+  }
+  function getHtml(module, funcName, nbParams, prefix) {
+    var functions = module.functions, f2 = null;
     for ( var i = 0; i < functions.length; i++) {
       var f = functions[i];
       var name = f.name;
       if (name == funcName) {
-        var className = startsWithString(module.namespace, 'java:') ? 'CodeMirror-hover-module-java' : 'CodeMirror-hover-module-xml';
-        var html = '';
-        html +='<span class="';
-        html +=className;
-        html +='">&nbsp;</span>';
-        html += '<b>';
-        html += getSignature(prefix, f);
-        html += '</b>';
-        if (f.doc) {
-          if (html != '') {
-            html += '<br/>';
-          }
-          html += f.doc;
-        }
-        if (module.resource) {
-          html += '<br/>File: ' + module.resource;
-        }
-        return html;
+    	// check param count
+    	var nbParamsOfFunc = 0;
+    	if (f.params) nbParamsOfFunc = f.params.length;
+    	if (nbParams != nbParamsOfFunc) {
+    		f2 = f;
+    	} else {
+    		return getHtmlOfFunction(module, f, prefix);
+    	}
       }
+    }
+    if (f2 != null) {
+		return getHtmlOfFunction(module, f2, prefix);    	
     }
     return '';
   }
@@ -61,11 +74,14 @@
   function getTextHover(cm, data) {
   	if (!data)
       return;
-    var token = data.token, pos = data.pos, html = '';
+    var token = data.token, html = '';
     switch (token.type) {
     	case "variable def":
 		  var s = token.string;// node.innerText || node.textContent;
 		  var prefixIndex = s.lastIndexOf(':');
+		  
+		  var cur = data.pos, lineNo = cur.line, start = token.end - 1;
+  		  var nbParams = CodeMirror.XQuery.getParamCount(cm, lineNo, start);
 		  if (prefixIndex != -1) {
 		    var lineCount = cm.lineCount();
 		    var token = cm.getTokenAt(CodeMirror.Pos(lineCount, cm
@@ -78,14 +94,14 @@
 		    var module = CodeMirror.XQuery.findModuleByPrefix(prefix, importedModules);
 		    if (module) {
 		      // loop for each function
-		      html = getHtml(module, funcName, prefix)
+		      html = getHtml(module, funcName, nbParams, prefix)
 		    }
 		  } else {
 		    // module without prefix (ex : concat of fn:concat)
 		    var modules = CodeMirror.XQuery.getModulesNoNeedsPrefix();
 		    for ( var i = 0; i < modules.length; i++) {
 		      var module = modules[i];
-		      var content = getHtml(module, s, module.prefix);
+		      var content = getHtml(module, s, nbParams, module.prefix);
 		      if (content != '') {
 		        html = content;
 		        break;

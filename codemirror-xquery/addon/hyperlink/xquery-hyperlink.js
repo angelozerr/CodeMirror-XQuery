@@ -79,8 +79,10 @@
             var module = CodeMirror.XQuery.findModuleByPrefix(prefix,
                 state.importedModules);
             if (module) {
+              var cur = data.pos, lineNo = cur.line, start = token.end - 1;
+      		  var nbParams = CodeMirror.XQuery.getParamCount(cm, lineNo, start);
               var namespace = module.namespace, location = module.location, resource = module.resource;
-              openExternal(namespace, location, funcName, resource);
+              openExternal(namespace, location, funcName, nbParams, resource);
               return;
             }
           }
@@ -107,7 +109,7 @@
         }
         return {
           open : function() {
-            openExternal(namespace, location, null, resource);
+            openExternal(namespace, location, null, null, resource);
           }
         }
       }

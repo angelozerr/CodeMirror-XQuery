@@ -150,5 +150,55 @@
         .Pos(0, 0));
     searchVar(cm, cursor);
   }
+  
+  function scan(line, currentNbBracket, currentNbParams, start) {
+      if (!line.text) return  {stop:true};
+      var pos = 0, end = line.text.length;
+      //if (line.text.length > maxScanLen) return null;
+      if (start != null) pos = start + 1;
+      for (; pos != end; pos += 1) {
+        var ch = line.text.charAt(pos);
+        if (currentNbBracket == null) {
+        	// character must be space or (
+        	if (ch === '(') {
+        		currentNbBracket = 1;
+        	}
+        	else if (ch != ' ') {
+        		return {stop:true};
+        	}
+        } else {
+        	if (ch === '(') {
+				currentNbBracket++;
+			} else if (ch == ')') {
+				currentNbBracket--;
+			} else if (ch == ',') {
+				if (currentNbBracket == 1) {
+					currentNbParams++;
+				}
+			} else {
+				if (currentNbBracket == 1 && currentNbParams == 0) {
+					currentNbParams++;
+				}
+			}
+	        if (currentNbBracket == 0) {
+	        	return {currentNbBracket: currentNbBracket, currentNbParams: currentNbParams, stop: true};
+	        }
+        }
+      }
+      return {currentNbBracket: currentNbBracket, currentNbParams: currentNbParams};
+   }
+  
+  XQuery.getParamCount = function (cm, lineNo, start) {
+	  var currentNbBracket = null, currentNbParams = 0;
+	  for (var i = lineNo, result, e = Math.min(i + 100, cm.lineCount()); i != e; i+=1) {
+		  var line = cm.getLineHandle(i);
+	      if (i == lineNo) result = scan(line, currentNbBracket, currentNbParams, start);
+	      else result = scan(line, currentNbBracket, currentNbParams);
+	      currentNbBracket = result.currentNbBracket;
+	      currentNbParams = result.currentNbParams;
+	      if (result.stop) break;
+	    }
+	  return currentNbParams;
+  }
 
 })();

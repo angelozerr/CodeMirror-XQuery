@@ -1387,7 +1387,8 @@ window.CodeMirror = (function() {
       display.scroller.scrollLeft = display.scrollbarH.scrollLeft = doc.scrollLeft = newScrollPos.scrollLeft;
       alignHorizontally(cm);
       if (op.scrollToPos)
-        scrollPosIntoView(cm, clipPos(cm.doc, op.scrollToPos), op.scrollToPosMargin);
+        scrollPosIntoView(cm, clipPos(cm.doc, op.scrollToPos.from),
+                          clipPos(cm.doc, op.scrollToPos.to), op.scrollToPos.margin);
     } else if (newScrollPos) {
       scrollCursorIntoView(cm);
     }
@@ -2183,7 +2184,11 @@ window.CodeMirror = (function() {
 
     var pos = posFromMouse(cm, e), scrollPos = display.scroller.scrollTop;
     if (!pos || opera) return; // Opera is difficult.
-    if (posEq(sel.from, sel.to) || posLess(pos, sel.from) || !posLess(pos, sel.to))
+
+    // Reset the current text selection only if the click is done outside of the selection
+    // and 'resetSelectionOnContextMenu' option is true.
+    var reset = cm.options.resetSelectionOnContextMenu;
+    if (reset && (posEq(sel.from, sel.to) || posLess(pos, sel.from) || !posLess(pos, sel.to)))
       operation(cm, setSelection)(cm.doc, pos, pos);
 
     var oldCSS = display.input.style.cssText;
@@ -2634,7 +2639,7 @@ window.CodeMirror = (function() {
   // SCROLLING
 
   function scrollCursorIntoView(cm) {
-    var coords = scrollPosIntoView(cm, cm.doc.sel.head, cm.options.cursorScrollMargin);
+    var coords = scrollPosIntoView(cm, cm.doc.sel.head, null, cm.options.cursorScrollMargin);
     if (!cm.state.focused) return;
     var display = cm.display, box = getRect(display.sizer), doScroll = null;
     if (coords.top + box.top < 0) doScroll = true;
@@ -2651,11 +2656,15 @@ window.CodeMirror = (function() {
     }
   }
 
-  function scrollPosIntoView(cm, pos, margin) {
+  function scrollPosIntoView(cm, pos, end, margin) {
     if (margin == null) margin = 0;
     for (;;) {
       var changed = false, coords = cursorCoords(cm, pos);
-      var scrollPos = calculateScrollPos(cm, coords.left, coords.top - margin, coords.left, coords.bottom + margin);
+      var endCoords = !end || end == pos ? coords : cursorCoords(cm, end);
+      var scrollPos = calculateScrollPos(cm, Math.min(coords.left, endCoords.left),
+                                         Math.min(coords.top, endCoords.top) - margin,
+                                         Math.max(coords.left, endCoords.left),
+                                         Math.max(coords.bottom, endCoords.bottom) + margin);
       var startTop = cm.doc.scrollTop, startLeft = cm.doc.scrollLeft;
       if (scrollPos.scrollTop != null) {
         setScrollTop(cm, scrollPos.scrollTop);
@@ -3173,17 +3182,23 @@ window.CodeMirror = (function() {
               clientHeight: scroller.clientHeight - co, clientWidth: scroller.clientWidth - co};
     },
 
-    scrollIntoView: operation(null, function(pos, margin) {
-      if (typeof pos == "number") pos = Pos(pos, 0);
+    scrollIntoView: operation(null, function(range, margin) {
+      if (range == null) range = {from: this.doc.sel.head, to: null};
+      else if (typeof range == "number") range = {from: Pos(range, 0), to: null};
+      else if (range.from == null) range = {from: range, to: null};
+      if (!range.to) range.to = range.from;
       if (!margin) margin = 0;
-      var coords = pos;
 
-      if (!pos || pos.line != null) {
-        this.curOp.scrollToPos = pos ? clipPos(this.doc, pos) : this.doc.sel.head;
-        this.curOp.scrollToPosMargin = margin;
-        coords = cursorCoords(this, this.curOp.scrollToPos);
+      var coords = range;
+      if (range.from.line != null) {
+        this.curOp.scrollToPos = {from: range.from, to: range.to, margin: margin};
+        coords = {from: cursorCoords(this, range.from),
+                  to: cursorCoords(this, range.to)};
       }
-      var sPos = calculateScrollPos(this, coords.left, coords.top - margin, coords.right, coords.bottom + margin);
+      var sPos = calculateScrollPos(this, Math.min(coords.from.left, coords.to.left),
+                                    Math.min(coords.from.top, coords.to.top) - margin,
+                                    Math.max(coords.from.right, coords.to.right),
+                                    Math.max(coords.from.bottom, coords.to.bottom) + margin);
       updateScrollPos(this, sPos.scrollLeft, sPos.scrollTop);
     }),
 
@@ -3215,6 +3230,7 @@ window.CodeMirror = (function() {
       clearCaches(this);
       resetInput(this, true);
       updateScrollPos(this, doc.scrollLeft, doc.scrollTop);
+      signalLater(this, "swapDoc", this, old);
       return old;
     }),
 
@@ -3288,6 +3304,8 @@ window.CodeMirror = (function() {
   option("firstLineNumber", 1, guttersChanged, true);
   option("lineNumberFormatter", function(integer) {return integer;}, guttersChanged, true);
   option("showCursorWhenSelecting", false, updateSelection, true);
+
+  option("resetSelectionOnContextMenu", true);
 
   option("readOnly", false, function(cm, val) {
     if (val == "nocursor") {onBlur(cm); cm.display.input.blur();}
@@ -4466,7 +4484,7 @@ window.CodeMirror = (function() {
       return out;
     }
     return function(builder, text, style, startStyle, endStyle, title) {
-      return inner(builder, text.replace(/ {3,}/, split), style, startStyle, endStyle, title);
+      return inner(builder, text.replace(/ {3,}/g, split), style, startStyle, endStyle, title);
     };
   }
 
@@ -5884,7 +5902,7 @@ window.CodeMirror = (function() {
 
   // THE END
 
-  CodeMirror.version = "3.18.1";
+  CodeMirror.version = "3.19.1";
 
   return CodeMirror;
 })();

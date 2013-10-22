@@ -98,7 +98,8 @@ a.
         matchBrackets: true,
         extraKeys: {
          	"'.'": passAndHint,
-        	"Ctrl-Space": "autocomplete"
+        	"Ctrl-Space": "autocomplete",
+        	"Ctrl-I": function(cm) { CodeMirror.tern.getServer(cm).showType(cm); }
         },
         gutters: ["CodeMirror-linenumbers"]
       });

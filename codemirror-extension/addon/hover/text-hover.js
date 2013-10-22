@@ -118,7 +118,10 @@
       var content = state.options.getTextHover(cm, data, e);
       if (content) {
         node.className += HOVER_CLASS;
-        showTooltipFor(e, content, node, state, cm);
+        if (typeof content == 'function') 
+	      content(showTooltipFor, data, e, node, state, cm);
+        else 
+          showTooltipFor(e, content, node, state, cm);        
       }
     }
   }

@@ -193,8 +193,6 @@
         if (!tp.retval.isEmpty()) ++score;
       } else if (objs) {
         score = tp.name ? 100 : 2;
-      } else if (prims) {
-        score = 1;
       }
       if (score >= maxScore) { maxScore = score; maxTp = tp; }
     }
@@ -354,7 +352,7 @@
     typeHint: function() { return this.other; }
   });
 
-  var IfObj = constraint("target", {
+  var IfObj = exports.IfObj = constraint("target", {
     addType: function(t, weight) {
       if (t instanceof Obj) this.target.addType(t, weight);
     },
@@ -381,6 +379,7 @@
 
   var Type = exports.Type = function() {};
   Type.prototype = extend(ANull, {
+    constructor: Type,
     propagate: function(c, w) { c.addType(this, w); },
     hasType: function(other) { return other == this; },
     isEmpty: function() { return false; },
@@ -390,6 +389,7 @@
 
   var Prim = exports.Prim = function(proto, name) { this.name = name; this.proto = proto; };
   Prim.prototype = extend(Type.prototype, {
+    constructor: Prim,
     toString: function() { return this.name; },
     getProp: function(prop) {return this.proto.hasProp(prop) || ANull;},
     gatherProperties: function(f, depth) {
@@ -409,6 +409,7 @@
     this.origin = cx.curOrigin;
   };
   Obj.prototype = extend(Type.prototype, {
+    constructor: Obj,
     toString: function(maxDepth) {
       if (!maxDepth && this.name) return this.name;
       var props = [], etc = false;
@@ -531,6 +532,7 @@
     this.retval = retval;
   };
   Fn.prototype = extend(Obj.prototype, {
+    constructor: Fn,
     toString: function(maxDepth) {
       if (maxDepth) maxDepth--;
       var str = "fn(";
@@ -578,6 +580,7 @@
     if (contentType) contentType.propagate(content);
   };
   Arr.prototype = extend(Obj.prototype, {
+    constructor: Arr,
     toString: function(maxDepth) {
       return "[" + toString(this.getProp("<i>").getType(), maxDepth, this) + "]";
     }
@@ -600,7 +603,6 @@
     this.parent = parent;
     this.props = Object.create(null);
     this.protos = Object.create(null);
-    this.prim = Object.create(null);
     this.origins = [];
     this.curOrigin = "ecma5";
     this.paths = Object.create(null);
@@ -624,12 +626,8 @@
       cx.num = new Prim(cx.protos.Number, "number");
       cx.curOrigin = null;
 
-      var passes = parent && parent.passes;
-      if (defs) for (var i = 0; i < defs.length; ++i) {
-        runPasses(passes, "preLoadDef", defs[i]);
+      if (defs) for (var i = 0; i < defs.length; ++i)
         def.load(defs[i]);
-        runPasses(passes, "postLoadDef", defs[i]);
-      }
     });
   };
 
@@ -675,6 +673,7 @@
     this.prev = prev;
   };
   Scope.prototype = extend(Obj.prototype, {
+    constructor: Scope,
     defVar: function(name, originNode) {
       for (var s = this; ; s = s.proto) {
         var found = s.props[name];
@@ -859,6 +858,7 @@
     case "number": return cx.num;
     case "string": return cx.str;
     case "object":
+    case "function":
       if (!val) return ANull;
       return getInstance(cx.protos.RegExp);
     }

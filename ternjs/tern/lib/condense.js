@@ -23,8 +23,9 @@
     runPass(state.passes.preCondenseReach, state);
 
     state.cx.topScope.path = "<top>";
+    state.cx.topScope.reached("", state);
     for (var path in state.roots)
-      state.roots[path].reached(path, state);
+      reach(state.roots[path], null, path, state);
     for (var i = 0; i < state.patchUp.length; ++i)
       patchUpSimpleInstance(state.patchUp[i], state);
 
@@ -40,8 +41,7 @@
 
     runPass(state.passes.postCondense, state);
 
-    simplify(state.output, state.options.sortOutput);
-    return state.output;
+    return simplify(state.output, state.options.sortOutput);
   };
 
   function State(origins, name, options) {
@@ -57,7 +57,6 @@
     this.altPaths = Object.create(null);
     this.patchUp = [];
     this.roots = Object.create(null);
-    this.roots[""] = this.cx.topScope;
   }
 
   State.prototype.isTarget = function(origin) {
@@ -84,10 +83,6 @@
     return len;
   }
 
-  function isConcrete(path) {
-    return !/\!|<i>/.test(path);
-  }
-
   function hop(obj, prop) {
     return Object.prototype.hasOwnProperty.call(obj, prop);
   }
@@ -97,7 +92,7 @@
       o.proto.hasCtor && !o.hasCtor;
   }
 
-  function reach(type, path, id, state) {
+  function reach(type, path, id, state, byName) {
     var actual = type.getType(false);
     if (!actual) return;
     var orig = type.origin || actual.origin, relevant = false;
@@ -120,25 +115,31 @@
         data.span = state.getSpan(type) || (actual != type && state.isTarget(actual.origin) && state.getSpan(actual)) || data.span;
         data.doc = type.doc || (actual != type && state.isTarget(actual.origin) && type.doc) || data.doc;
         data.data = actual.metaData;
+        data.byName = data.byName == null ? !!byName : data.byName && byName;
         state.types[newPath] = data;
       }
     } else {
       if (relevant) state.altPaths[newPath] = actual;
     }
   }
+  function reachByName(aval, path, id, state) {
+    var type = aval.getType();
+    if (type) reach(type, path, id, state, true);
+  }
 
   infer.Prim.prototype.reached = function() {return true;};
 
   infer.Arr.prototype.reached = function(path, state, concrete) {
-    if (!concrete) reach(this.getProp("<i>"), path, "<i>", state);
+    if (!concrete) reachByName(this.getProp("<i>"), path, "<i>", state);
     return true;
   };
 
   infer.Fn.prototype.reached = function(path, state, concrete) {
     infer.Obj.prototype.reached.call(this, path, state, concrete);
     if (!concrete) {
-      for (var i = 0; i < this.args.length; ++i) reach(this.args[i], path, "!" + i, state);
-      reach(this.retval, path, "!ret", state);
+      for (var i = 0; i < this.args.length; ++i)
+        reachByName(this.args[i], path, "!" + i, state);
+      reachByName(this.retval, path, "!ret", state);
     }
     return true;
   };
@@ -155,7 +156,7 @@
       reach(this.props[prop], path, prop, state);
       hasProps = true;
     }
-    if (!hasProps && !this.condenseForceInclude) {
+    if (!hasProps && !this.condenseForceInclude && !(this instanceof infer.Fn)) {
       this.nameOverride = "?";
       return false;
     }
@@ -167,7 +168,6 @@
     if (path) {
       obj.nameOverride = "+" + path;
     } else {
-      obj.nameOverride = "?";
       path = obj.path;
     }
     for (var prop in obj.props)
@@ -175,17 +175,20 @@
   }
 
   function createPath(parts, state) {
-    var base = state.output;
-    for (var i = parts.length - 1; i >= 0; --i) if (!isConcrete(parts[i])) {
-      var def = parts.slice(0, i + 1).join(".");
-      var defs = state.output["!define"];
-      if (hop(defs, def)) base = defs[def];
-      else defs[def] = base = {};
-      parts = parts.slice(i + 1);
-    }
-    for (var i = 0; i < parts.length; ++i) {
-      if (hop(base, parts[i])) base = base[parts[i]];
-      else base = base[parts[i]] = {};
+    var base = state.output, defs = state.output["!define"];
+    for (var i = 0, path; i < parts.length; ++i) {
+      var part = parts[i], known = path && state.types[path];
+      path = path ? path + "." + part : part;
+      var me = state.types[path];
+      if (part.charAt(0) == "!" ||
+          known && known.type.constructor != infer.Obj ||
+          me && me.byName) {
+        if (hop(defs, path)) base = defs[path];
+        else defs[path] = base = {};
+      } else {
+        if (hop(base, parts[i])) base = base[part];
+        else base = base[part] = {};
+      }
     }
     return base;
   }
@@ -205,13 +208,22 @@
 
   function storeAlt(path, type, state) {
     var parts = path.split("."), last = parts.pop();
+    if (last[0] == "!") return;
+    var known = state.types[parts.join(".")];
     var base = createPath(parts, state);
+    if (known && known.type.constructor != infer.Obj) return;
     if (!hop(base, last)) base[last] = type.nameOverride || type.path;
   }
 
+  var typeNameStack = [];
   function typeName(type) {
     var actual = type.getType(false);
-    return actual ? actual.typeName() : "?";
+    if (!actual || typeNameStack.indexOf(actual) > -1)
+      return actual && actual.path || "?";
+    typeNameStack.push(actual);
+    var name = actual.typeName();
+    typeNameStack.pop();
+    return name;
   }
 
   infer.Prim.prototype.typeName = function() { return this.name; };
@@ -240,7 +252,7 @@
 
   infer.Obj.prototype.typeName = function() {
     if (this.nameOverride) return this.nameOverride;
-    if (!this.path || !isConcrete(this.path)) return "?";
+    if (!this.path) return "?";
     return this.path;
   };
 
@@ -259,10 +271,12 @@
 
   function sortObject(obj) {
     var props = [], out = {};
-    for (var prop in obj) props.push({name: prop, val: obj[prop]});
-    props.sort(function(a, b) { return a.name < b.name ? -1 : 1; });
-    for (var i = 0; i < props.length; ++i)
-      out[props[i].name] = props[i].val;
+    for (var prop in obj) props.push(prop);
+    props.sort();
+    for (var i = 0; i < props.length; ++i) {
+      var prop = props[i];
+      out[prop] = obj[prop];
+    }
     return out;
   }
 

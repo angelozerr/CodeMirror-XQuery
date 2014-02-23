@@ -12,9 +12,9 @@
       return {
         getText : options
       };
-    else if (!options || !options.getText)
+    /*else if (!options || !options.getText)
       throw new Error(
-          "Required option 'getText' missing (tern-extension addon)");
+          "Required option 'getText' missing (tern-extension addon)");*/
     return options;
   }
 
@@ -118,8 +118,14 @@
 
   function getServer(cm) {
     if (defaultServer == null) {
+      var plugins = {};
+      var state = cm.state.ternExt;
+      if (state && state.options.plugins) {
+        plugins = state.options.plugins;
+      }
       defaultServer = new CodeMirror.TernServer({
         defs : defs,
+        plugins: plugins,
         fileFilter : fileFilter,
         completionTip : function(data) {
           if (data.info)

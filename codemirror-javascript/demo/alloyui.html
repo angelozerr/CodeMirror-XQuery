@@ -70,6 +70,16 @@ AUI().use('', function(A) {
   //<-Ctrl+Space shows A
   A. //<-Ctrl+Space shows use and ready
 });
+
+YUI().use('aui-node', function(Y) {
+  var node = Y.one('#toggleColor');
+  node. // <-Ctrl+Space: here addClass from 'aui-node' module is displayed.
+});
+
+YUI().use('xxx', function(Y) {
+  var node = Y.one('#toggleColor');
+  node. // <-Ctrl+Space: here ano completion, because module 'aui-node' is not loaded.
+});
 </textarea></form>
     <script type="text/javascript">
        
@@ -104,8 +114,7 @@ AUI().use('', function(A) {
 	        "Alt-,": function(cm) { CodeMirror.tern.jumpBack(cm); },
 	        "Ctrl-Q": function(cm) { CodeMirror.tern.rename(cm); }
         },
-        gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
-    	lintWith: CodeMirror.javascriptValidator,
+        gutters: ["CodeMirror-linenumbers"],
     	textHover: {delay:300},
     	ternWith: { plugins: {"alloyui" : "../alloyui"}}
       });

@@ -17,7 +17,8 @@
 
     var ourMap = {
       Tab : selectNextVariable,
-      Esc : uninstall
+      Esc : uninstall,
+      Enter : uninstall,
     }
 
     function TemplateState() {
@@ -75,8 +76,10 @@
         }
         var marker = state.selectableMarkers[state.varIndex];
         var pos = marker.find();
+        var templateVar = marker._templateVar;  
+          
         cm.setSelection(pos.from, pos.to);
-        var templateVar = marker._templateVar;
+          
         for ( var i = 0; i < state.marked.length; i++) {
           var m = state.marked[i];
           if (m == marker) {
@@ -96,6 +99,12 @@
           }
         }
         cm.refresh();
+          
+        if (templateVar == "cursor")
+        {
+            cm.setSelection(pos.from);
+            uninstall(cm);
+        }
       }
     }
 
@@ -193,6 +202,22 @@
             });
             variables[token.variable] = false;
           }
+            else {
+                content += " ";
+                var from = Pos(data.from.line + line, data.from.ch + token.x);
+                var to = Pos(data.from.line + line, data.from.ch + token.x
+                    + 1);
+                var selectable = variables[token.variable] != false;
+                markers.push({
+                  from : from,
+                  to : to,
+                  variable : token.variable,
+                  selectable : true
+                });
+                
+                variables[token.variable] = false;
+               
+            }
         } else {
           content += token;
           if (token == "\n") {

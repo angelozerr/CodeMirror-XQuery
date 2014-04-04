@@ -37,13 +37,13 @@
     if (doc) { field.doc = doc; field.propagate(new SetDoc(doc)); }
     val.propagate(field);
     for (var i = 0; i < this.forward.length; ++i)
-      this.forward[i].set(name, val, doc, node, (depth || 0) + 1);
+      this.forward[i].set(name, val, doc, node, (depth || 0) + 1, fieldType);
   };
   Injector.prototype.forwardTo = function(injector) {
     this.forward.push(injector);
     for (var field in this.fields) {
       var val = this.fields[field];
-      injector.set(field, val, val.doc, val.span || val.originNode, 1);
+      injector.set(field, val, val.doc, val.span || val.originNode, 1, val.type);
     }
   };
 
@@ -103,32 +103,46 @@
   infer.registerFunction("angular_regFieldCallController", function(self, args, argNodes) {
     angular_regFieldCall(self, args, argNodes, 'controller')
   });
-
+  
   infer.registerFunction("angular_regFieldCallDirective", function(self, args, argNodes) {
     var mod = self.getType(), fn = null;
     if (mod && argNodes && argNodes.length > 1) {
-      var retval = args[1].retval;
-      if (retval) {
-        var type = retval.getType();
-        if (type && type.props && type.props.controller && type.props.controller.getType()) {
-          var fn = args[1].retval.getType().props.controller.getType();
-          var node = fn.originNode;        
-          
-          var result = applyWithInjection(mod, fn, node);
-          if (mod.injector && argNodes[0].type == "Literal")
-            mod.injector.set(argNodes[0].value + '#controller', result, argNodes[0].angularDoc, argNodes[0], null, 'controller');
-          
-          fn = args[1].retval.getType();
-        } else  if (type && type.props && type.props.link && type.props.link.getType()) {
-          var fn = args[1].retval.getType().props.link.getType();
-          var node = fn.originNode;        
-          
-          var result = applyWithInjection(mod, fn, node);
-          if (mod.injector && argNodes[0].type == "Literal")
-            mod.injector.set(argNodes[0].value + '#link', result, argNodes[0].angularDoc, argNodes[0], null, 'controller');
-          
-          fn = args[1].retval.getType();
-        } 
+      var node = argNodes[1], fnDirective = null, fn;
+      if (node.type == "FunctionExpression") {
+        fnDirective = args[1];
+      } else if (node.type == "ArrayExpression") {
+          fnDirective = args[1].getProp("<i>").getFunctionType();
+      }
+      if (fnDirective) {
+        var retval = fnDirective.retval;
+        if (retval) {
+          var type = retval.getType();
+          if (type && type.props && type.props.controller && type.props.controller.getType()) {
+            fn = type.props.controller.getType();
+            if (fn instanceof infer.Fn) { 
+              var node = fn.originNode;                  
+              var result = applyWithInjection(mod, fn, node);
+              if (mod.injector && argNodes[0].type == "Literal")
+                mod.injector.set(argNodes[0].value + '#controller', result, argNodes[0].angularDoc, argNodes[0], null, 'controller');  
+            }
+            fn = type;
+          } else  if (type && type.props && type.props.link && type.props.link.getType()) {
+            fn = type.props.link.getType();
+            if (fn instanceof infer.Fn) { 
+              var node = fn.originNode;                  
+              var result = applyWithInjection(mod, fn, node);
+              if (mod.injector && argNodes[0].type == "Literal")
+                mod.injector.set(argNodes[0].value + '#link', result, argNodes[0].angularDoc, argNodes[0], null, 'controller');  
+            }
+            fn = type;
+          } else if (type && type instanceof infer.Fn) {
+            fn = type; 
+            var node = fn.originNode;                  
+            var result = applyWithInjection(mod, fn, node);
+            if (mod.injector && argNodes[0].type == "Literal")
+              mod.injector.set(argNodes[0].value + '#controller', result, argNodes[0].angularDoc, argNodes[0], null, 'controller');              
+          }
+        }
       }
       
       if (!mod.directives) mod.directives = {};
@@ -393,6 +407,12 @@
         preventDefault: "fn()",
         defaultPrevented: "bool"
       },
+      DirectiveFactory: {
+        restrict: "string"
+      },
+      FnDirectiveFactory: {
+        "!type": "fn() -> DirectiveFactory"
+      },
       Module: {
         "!url": "http://docs.angularjs.org/api/angular.Module",
         "!doc": "Interface for configuring angular modules.",
@@ -416,7 +436,7 @@
             "!doc": "Register a controller."
           },
           directive: {
-            "!type": "fn(name: string, directiveFactory: fn()) -> !this",
+            "!type": "fn(name: string, directiveFactory: FnDirectiveFactory) -> !this",
             "!effects": ["custom angular_regFieldCallDirective"],
             "!url": "http://docs.angularjs.org/api/ng.$compileProvider#directive",
             "!doc": "Register a new directive with the compiler."
@@ -1386,7 +1406,7 @@
       visitDirectives(_angular, files, moduleName, function(name, node,
           fnType) {
         var completion = createCompletionIfMatch(name, fnType, moduleName, 'directive')
-        if (completion && fnType.originNode && fnType.originNode.properties) {
+        if (completion && fnType && fnType.originNode && fnType.originNode.properties) {
           var properties = fnType.originNode.properties;
           for ( var i = 0; i < properties.length; i++) {
             var p = properties[i];

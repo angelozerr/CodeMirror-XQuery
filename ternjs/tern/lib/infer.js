@@ -139,7 +139,7 @@
       var props = Object.create(null), foundProp = null;
       for (var i = 0; i < this.forward.length; ++i) {
         var prop = this.forward[i].propHint();
-        if (prop && prop != "length" && prop != "<i>" && prop != "✖") {
+        if (prop && prop != "length" && prop != "<i>" && prop != "✖" && prop != cx.completingProperty) {
           props[prop] = true;
           foundProp = prop;
         }
@@ -173,8 +173,8 @@
         var prop = this.forward[i].propHint();
         if (prop) f(prop, null, 0);
       }
-      var computed = this.computedPropType();
-      if (computed) computed.gatherProperties(f);
+      var guessed = this.makeupType();
+      if (guessed) guessed.gatherProperties(f);
     }
   });
 
@@ -446,6 +446,7 @@
     defProp: function(prop, originNode) {
       var found = this.hasProp(prop, false);
       if (found) {
+        if (found.maybePurge) found.maybePurge = false;
         if (originNode && !found.originNode) found.originNode = originNode;
         return found;
       }
@@ -657,6 +658,23 @@
     finally { cx = old; }
   };
 
+  exports.TimedOut = function() {
+    this.message = "Timed out";
+    this.stack = (new Error()).stack;
+  }
+  exports.TimedOut.prototype = Object.create(Error.prototype);
+  exports.TimedOut.prototype.name = "infer.TimedOut";
+
+  var timeout;
+  exports.withTimeout = function(ms, f) {
+    var end = +new Date + ms;
+    var oldEnd = timeout;
+    if (oldEnd && oldEnd < end) return f();
+    timeout = end;
+    try { return f(); }
+    finally { timeout = oldEnd; }
+  };
+
   exports.addOrigin = function(origin) {
     if (cx.origins.indexOf(origin) < 0) cx.origins.push(origin);
   };
@@ -673,6 +691,8 @@
     try {
       var ret = f(add);
       for (var i = 0; i < list.length; i += 4) {
+        if (timeout && +new Date >= timeout)
+          throw new exports.TimedOut();
         depth = list[i + 3] + 1;
         list[i + 1].addType(list[i], list[i + 2]);
       }
@@ -739,8 +759,9 @@
         var oldOrigin = cx.curOrigin;
         cx.curOrigin = fn.origin;
         var scopeCopy = new Scope(scope.prev);
+        scopeCopy.originNode = scope.originNode;
         for (var v in scope.props) {
-          var local = scopeCopy.defProp(v);
+          var local = scopeCopy.defProp(v, scope.props[v].originNode);
           for (var i = 0; i < args.length; ++i) if (fn.argNames[i] == v && i < args.length)
             args[i].propagate(local);
         }
@@ -802,15 +823,13 @@
   // SCOPE GATHERING PASS
 
   function addVar(scope, nameNode) {
-    var val = scope.defProp(nameNode.name, nameNode);
-    if (val.maybePurge) val.maybePurge = false;
-    return val;
+    return scope.defProp(nameNode.name, nameNode);
   }
 
   var scopeGatherer = walk.make({
     Function: function(node, scope, c) {
       var inner = node.body.scope = new Scope(scope);
-      inner.node = node;
+      inner.originNode = node;
       var argVals = [], argNames = [];
       for (var i = 0; i < node.params.length; ++i) {
         var param = node.params[i];
@@ -1211,6 +1230,7 @@
   Obj.prototype.purge = function(test) {
     if (this.purgeGen == cx.purgeGen) return true;
     this.purgeGen = cx.purgeGen;
+    var props = [];
     for (var p in this.props) {
       var av = this.props[p];
       if (test(av, av.originNode))

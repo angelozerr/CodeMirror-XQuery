@@ -17,7 +17,8 @@
 
     var ourMap = {
       Tab : selectNextVariable,
-      Esc : uninstall
+      Esc : uninstall,
+      Enter : uninstall,
     }
 
     function TemplateState() {
@@ -75,8 +76,10 @@
         }
         var marker = state.selectableMarkers[state.varIndex];
         var pos = marker.find();
+        var templateVar = marker._templateVar;  
+          
         cm.setSelection(pos.from, pos.to);
-        var templateVar = marker._templateVar;
+          
         for ( var i = 0; i < state.marked.length; i++) {
           var m = state.marked[i];
           if (m == marker) {
@@ -96,6 +99,13 @@
           }
         }
         cm.refresh();
+          
+        if (templateVar == "cursor")
+        {
+            cm.replaceRange("", pos.from, {line: pos.from.line, ch: pos.from.ch + 2})
+            cm.setSelection(pos.from);
+            uninstall(cm);
+        }
       }
     }
 
@@ -181,8 +191,8 @@
         if (token.variable) {
           if (!isSpecialVar(token.variable)) {
             content += token.variable;
-            var from = Pos(data.from.line + line, data.from.ch + token.x);
-            var to = Pos(data.from.line + line, data.from.ch + token.x
+            var from = Pos(data.from.line + line, token.x);
+            var to = Pos(data.from.line + line, token.x
                 + token.variable.length);
             var selectable = variables[token.variable] != false;
             markers.push({
@@ -193,6 +203,22 @@
             });
             variables[token.variable] = false;
           }
+            else {
+                content += "//";
+                var from = Pos(data.from.line + line, token.x);
+                var to = Pos(data.from.line + line, token.x
+                    + 2);
+                var selectable = variables[token.variable] != false;
+                markers.push({
+                  from : from,
+                  to : to,
+                  variable : token.variable,
+                  selectable : true
+                });
+                
+                variables[token.variable] = false;
+               
+            }
         } else {
           content += token;
           if (token == "\n") {
@@ -204,7 +230,27 @@
       var from = data.from;
       var to = data.to;
       cm.replaceRange(content, from, to);
-
+      
+      var lines = content.split("\n");
+      
+      for (x = 0; x < lines.length; x++) 
+      {        
+        var targetLine = from.line + x;
+        
+        cm.indentLine(targetLine);
+        var line = cm.getLine(targetLine);
+        var deltaIndent = line.length - lines[x].length;
+        
+        for (y = 0; y < markers.length; y++)
+        {
+          if (markers[y].from.line == targetLine)
+          {
+            markers[y].from.ch += deltaIndent;
+            markers[y].to.ch += deltaIndent;
+          }
+        }
+      }
+      
       for ( var i = 0; i < markers.length; i++) {
         var marker = markers[i], from = marker.from, to = marker.to;
         var markText = cm.markText(from, to, {

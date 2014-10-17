@@ -25,6 +25,42 @@
     this.varIndex = -1;
   }
 
+  function Template(data) {
+    this.name = data.name; // Optional
+    this.description = data.description; // Optional
+    if(data.template != null) {
+      this.source = data.template;
+    } else if(data.tokens != null) {
+      this._tokens = data.tokens;
+    }
+  }
+
+  Template.prototype.tokens = function() {
+    if(this._tokens == null) {
+      this._tokens = parseTemplate(this.source);
+    }
+    return this._tokens;
+  };
+
+  Template.prototype.content = function() {
+    if(this._content == null) {
+      var tokens = this.tokens();
+      var content = '';
+      for ( var i = 0; i < tokens.length; i++) {
+        var token = tokens[i];
+        if (token.variable) {
+          if (!isSpecialVar(token.variable)) {
+            content += token.variable;
+          }
+        } else {
+          content += token;
+        }
+      }
+      this._content = content;
+    }
+    return this._content;
+  };
+
   function getMarkerChanged(cm, textChanged) {
     var markers = cm.findMarksAt(textChanged.from);
     if (markers) {
@@ -104,8 +140,7 @@
     }
   }
 
-  function parseTemplate(template) {
-    var content = template.template;
+  function parseTemplate(content) {
     var tokens = [];
     var varParsing = false;
     var last = null;
@@ -163,15 +198,14 @@
     return variable == 'cursor' || variable == 'line_selection';
   }
 
-  function install(cm, data, completion) {
+  Template.prototype.insert = function(cm, data) {
     if (cm._templateState) {
       uninstall(cm);
     }
     var state = new TemplateState();
     cm._templateState = state;
 
-    var template = completion.template;
-    var tokens = parseTemplate(template);
+    var tokens = this.tokens();
     var content = '';
     var line = data.from.line;
     var col = data.from.ch;
@@ -284,56 +318,44 @@
     var list = templatesMap[mode];
     if (list) {
       for ( var i = 0; i < list.length; i++) {
-        var templates = list[i].templates;
-        for ( var j = 0; j < templates.length; j++) {
-          var template = templates[j];
-          if (startsWith(template.name, text)) {
-            var label = template.name;
-            if (template.description) {
-              label += '- ' + template.description;
-            }
-            var className = "CodeMirror-hint-template";
-            if (template.className)
-              className = template.className;
-            var completion = {
-              "className" : className,
-              "text" : label,
-              "template" : template,
-            };
-            completion.data = completion;
-            completion.hint = function(cm, data, completion) {
-              install(cm, data, completion);
-            };
-            completion.info = function(completion) {
-              var content = '';
-              var tokens = parseTemplate(completion.template);
-              for ( var i = 0; i < tokens.length; i++) {
-                var token = tokens[i];
-                if (token.variable) {
-                  if (!isSpecialVar(token.variable)) {
-                    content += token.variable;
-                  }
-                } else {
-                  content += token;
-                }
-              }
-
-              if (CodeMirror.runMode) {
-                var result = document.createElement('div');
-                result.className = 'cm-s-default';
-                if (cm.options && cm.options.theme)
-                  result.className = 'cm-s-' + cm.options.theme;
-                CodeMirror.runMode(content, cm.getMode().name, result);
-                return result;
-              }
-              return content;
-            };
-            completions.push(completion);
+        var template = list[i];
+        if (startsWith(template.name, text)) {
+          var label = template.name;
+          if (template.description) {
+            label += '- ' + template.description;
           }
+          var className = "CodeMirror-hint-template";
+          if (template.className)
+            className = template.className;
+          var completion = {
+            "className" : className,
+            "text" : label,
+            "template" : template,
+          };
+          completion.data = completion;
+          completion.hint = function(cm, data, completion) {
+            completion.template.insert(cm, data);
+          };
+          completion.info = function(completion) {
+            var content = completion.template.content();
+
+            if (CodeMirror.runMode) {
+              var result = document.createElement('div');
+              result.className = 'cm-s-default';
+              if (cm.options && cm.options.theme)
+                result.className = 'cm-s-' + cm.options.theme;
+              CodeMirror.runMode(content, cm.getMode().name, result);
+              return result;
+            }
+            return content;
+          };
+          completions.push(completion);
         }
       }
     }
   }
+
+  CodeMirror.templatesHint.Template = Template;
 
   CodeMirror.templatesHint.addTemplates = function(templates) {
     var context = templates.context;
@@ -343,7 +365,9 @@
         list = [];
         templatesMap[context] = list;
       }
-      list.push(templates);
+      templates.templates.forEach(function(template) {
+        list.push(new Template(template));
+      });
     }
   }
 

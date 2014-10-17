@@ -17,6 +17,7 @@
 
     var ourMap = {
       Tab : selectNextVariable,
+      Enter : function(cm) { selectNextVariable(cm, true) },
       Esc : uninstall
     }
 
@@ -66,11 +67,17 @@
       }
     }
 
-    function selectNextVariable(cm) {
+    function selectNextVariable(cm, exitOnEnd) {
       var state = cm._templateState;
       if (state.selectableMarkers.length > 0) {
         state.varIndex++;
         if (state.varIndex >= state.selectableMarkers.length) {
+          // If we reach the last token and exitOnEnd is true, we exit instead of
+          // looping back to the first token.
+          if (exitOnEnd) {
+            exit(cm);
+            return;
+          }
           state.varIndex = 0;
         }
         var marker = state.selectableMarkers[state.varIndex];
@@ -176,6 +183,7 @@
       var line = 0;
       var markers = [];
       var variables = [];
+      var cursor = null;
       for ( var i = 0; i < tokens.length; i++) {
         var token = tokens[i];
         if (token.variable) {
@@ -192,6 +200,8 @@
               selectable : selectable
             });
             variables[token.variable] = false;
+          } else if(token.variable == 'cursor') {
+            cursor = Pos(data.from.line + line, data.from.ch + token.x);
           }
         } else {
           content += token;
@@ -220,6 +230,11 @@
           state.selectableMarkers.push(markText);
         }
       }
+
+      if (cursor != null) {
+        state.cursor = cm.setBookmark(cursor);
+      }
+
       selectNextVariable(cm);
 
       cm.on("change", onChange);
@@ -227,10 +242,25 @@
 
     }
 
+    function exit(cm) {
+      // Move to ${cursor} in the template, then uninstall.
+      var cursor = cm._templateState.cursor;
+      if (cursor != null) {
+        var cursorPos = cursor.find();
+        if (cursorPos != null) {
+          cm.setSelection(cursorPos, cursorPos);
+        }
+      }
+      uninstall(cm);
+    }
+
     function uninstall(cm) {
       var state = cm._templateState;
       for ( var i = 0; i < state.marked.length; i++) {
         state.marked[i].clear();
+      }
+      if (state.cursor != null) {
+        state.cursor.clear();
       }
       state.marked.length = 0;
       state.selectableMarkers.length = 0;

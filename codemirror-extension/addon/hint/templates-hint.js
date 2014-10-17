@@ -112,7 +112,6 @@
       var varParsing = false;
       var last = null;
       var token = '';
-      var posX = 0;
       for ( var i = 0; i < content.length; i++) {
         var current = content.charAt(i);
         if (current == "\n") {
@@ -121,7 +120,6 @@
           }
           token = '';
           tokens.push(current);
-          posX = 0;
           last = null;
         } else {
           var addChar = true;
@@ -130,10 +128,8 @@
               varParsing = false;
               addChar = false;
               tokens.push({
-                "variable" : token,
-                "x" : posX
+                "variable" : token
               });
-              posX += token.length;
               token = '';
             }
           } else {
@@ -145,7 +141,6 @@
                 addChar = false;
                 if (token != '') {
                   tokens.push(token);
-                  posX += token.length;
                 }
                 token = '';
               }
@@ -180,7 +175,8 @@
       var template = completion.template;
       var tokens = parseTemplate(template);
       var content = '';
-      var line = 0;
+      var line = data.from.line;
+      var col = data.from.ch;
       var markers = [];
       var variables = [];
       var cursor = null;
@@ -189,10 +185,11 @@
         if (token.variable) {
           if (!isSpecialVar(token.variable)) {
             content += token.variable;
-            var from = Pos(data.from.line + line, data.from.ch + token.x);
-            var to = Pos(data.from.line + line, data.from.ch + token.x
+            var from = Pos(line, col);
+            var to = Pos(line, col
                 + token.variable.length);
             var selectable = variables[token.variable] != false;
+            col += token.variable.length;
             markers.push({
               from : from,
               to : to,
@@ -201,18 +198,22 @@
             });
             variables[token.variable] = false;
           } else if(token.variable == 'cursor') {
-            cursor = Pos(data.from.line + line, data.from.ch + token.x);
+            cursor = Pos(line, col);
           }
         } else {
           content += token;
           if (token == "\n") {
             line++;
+            col = 0;
+          } else {
+            col += token.length;
           }
         }
       }
 
       var from = data.from;
       var to = data.to;
+      var startLine = from.line;
       cm.replaceRange(content, from, to);
 
       for ( var i = 0; i < markers.length; i++) {
@@ -242,7 +243,7 @@
       // markers are moved accordingly.
       var lines = content.split("\n");
       for ( var x = 1; x < lines.length; x++) {
-        var targetLine = from.line + x;
+        var targetLine = startLine + x;
         cm.indentLine(targetLine);
       }
 

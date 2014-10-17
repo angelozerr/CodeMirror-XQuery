@@ -235,6 +235,17 @@
         state.cursor = cm.setBookmark(cursor);
       }
 
+      // Auto-indent everything except the first line.
+      // This will typically indent the rest of the code according
+      // to the indentation of the first line.
+      // We do the indentation after creating the markers, so that the
+      // markers are moved accordingly.
+      var lines = content.split("\n");
+      for ( var x = 1; x < lines.length; x++) {
+        var targetLine = from.line + x;
+        cm.indentLine(targetLine);
+      }
+
       selectNextVariable(cm);
 
       cm.on("change", onChange);

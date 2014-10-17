@@ -28,6 +28,8 @@
   function Template(data) {
     this.name = data.name; // Optional
     this.description = data.description; // Optional
+    // Either supply template (string), or tokens (array).
+    // If template is supplied, it is parsed into tokens.
     if(data.template != null) {
       this.source = data.template;
     } else if(data.tokens != null) {

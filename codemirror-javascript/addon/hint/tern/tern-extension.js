@@ -172,7 +172,7 @@
     var tokens = [completion.name];
 
     var type = completion.type;
-    var firstParam = null, currentParam = null, typeParsing = false;
+    var firstParam = null, currentParam = null, typeParsing = false, optionalParam = false;
     if (startsWith(type, 'fn(')) {
       tokens.push('(');
       var bracket = 0;
@@ -200,16 +200,21 @@
               } else {
                 if (c == ':') {
                   typeParsing = true;
-                  if (firstParam == null) {
-                    firstParam = currentParam;
-                  } else {
-                    tokens.push(', ');
+                  if(!optionalParam) {
+                    if (firstParam == null) {
+                      firstParam = currentParam;
+                    } else {
+                      tokens.push(', ');
+                    }
+                    tokens.push({variable: currentParam});
                   }
-                  tokens.push({variable: currentParam});
                   currentParam = null;
+                  optionalParam = false;
                 } else {
                   if (c != ' ' && c != '?') {
                     currentParam += c;
+                  } else if(c == '?') {
+                    optionalParam = true;
                   }
                 }
               }

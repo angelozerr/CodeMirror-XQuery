@@ -54,18 +54,8 @@
           var from = Pos(data.from.line, data.from.ch);
           var to = Pos(data.to.line, data.to.ch);
           var ternCompletion = completion.data;
-          var inserText = getInsertText(ternCompletion);
-          cm.replaceRange(inserText.text, from, to);
-          var firstParam = inserText.firstParam
-          if (firstParam != null) {
-            var name = ternCompletion.name;
-            // the function to insert has parameters, select the first
-            // parameter.
-            cm.setSelection(
-                Pos(data.from.line, data.from.ch + name.length + 1), Pos(
-                    data.to.line, data.from.ch + name.length + 1
-                        + firstParam.length));
-          }
+          var template = getInsertTemplate(ternCompletion);
+          template.insert(cm, data);
         };
       }
       if (CodeMirror.templatesHint) {
@@ -178,12 +168,13 @@
     return text;
   }
 
-  function getInsertText(completion) {
-    var text = completion.name;
+  function getInsertTemplate(completion) {
+    var tokens = [completion.name];
+
     var type = completion.type;
-    var firstParam = null, currentParam = null, typeParsing = false;
+    var firstParam = null, currentParam = null, typeParsing = false, optionalParam = false;
     if (startsWith(type, 'fn(')) {
-      text += '(';
+      tokens.push('(');
       var bracket = 0;
       var afterStartFn = type.substring(2, type.length);
       var i = 0;
@@ -209,16 +200,21 @@
               } else {
                 if (c == ':') {
                   typeParsing = true;
-                  if (firstParam == null) {
-                    firstParam = currentParam;
-                  } else {
-                    text += ', ';
+                  if(!optionalParam) {
+                    if (firstParam == null) {
+                      firstParam = currentParam;
+                    } else {
+                      tokens.push(', ');
+                    }
+                    tokens.push({variable: currentParam});
                   }
-                  text += currentParam;
                   currentParam = null;
+                  optionalParam = false;
                 } else {
                   if (c != ' ' && c != '?') {
                     currentParam += c;
+                  } else if(c == '?') {
+                    optionalParam = true;
                   }
                 }
               }
@@ -228,12 +224,11 @@
         if (bracket == 0)
           break;
       }
-      text += ')';
+      tokens.push(')');
     }
-    return {
-      "text" : text,
-      "firstParam" : firstParam
-    };
+
+    tokens.push({cursor: true});
+    return new CodeMirror.templatesHint.Template({tokens: tokens});
   }
 
   CodeMirror.defineOption("ternWith", false, function(cm, val, old) {

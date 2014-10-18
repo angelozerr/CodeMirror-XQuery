@@ -218,6 +218,9 @@
         }
       }
       cm.refresh();
+    } else {
+      // No tokens - exit.
+      exit(cm);
     }
   }
 
@@ -279,6 +282,7 @@
         endStyle : "CodeMirror-templates-variable-end",
         inclusiveLeft : true,
         inclusiveRight : true,
+        clearWhenEmpty: false,  // Works in CodeMirror 4.6
         _templateVar : marker.variable
       });
       state.marked.push(markText);
@@ -302,11 +306,12 @@
       cm.indentLine(targetLine);
     }
 
-    selectNextVariable(cm);
-
+    // Have to be before selectNextVariable, since selectNextVariable
+    // may exit and remove the keymap again.
     cm.on("change", onChange);
     cm.addKeyMap(ourMap);
 
+    selectNextVariable(cm, true);
   }
 
   function exit(cm) {

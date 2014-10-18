@@ -227,7 +227,7 @@
       tokens.push(')');
     }
 
-    tokens.push({variable: 'cursor'});
+    tokens.push({cursor: true});
     return new CodeMirror.templatesHint.Template({tokens: tokens});
   }
 

@@ -25,11 +25,25 @@
     this.varIndex = -1;
   }
 
+  // A Template instance represents an autocompletion template.
+  // It can be parsed from an eclipse-type template string,
+  // or supplied with a pre-parsed token array.
+  //
+  // The token array may consist of the following tokens:
+  //   "\n" (newline character)
+  //       Single newline character per token.
+  //   text (string)
+  //       Normal text, no newline characters allowed.
+  //   { variable: "name" }
+  //       Variable token, to be populated by the user.
+  //   { cursor: true }
+  //       The cursor will be placed here after completing the template
+  //   { line_separator: true }
+  //       If the template surrounds existing text, the existing text will be
+  //       placed here. Not implemented currently.
   function Template(data) {
     this.name = data.name; // Optional
     this.description = data.description; // Optional
-    // Either supply template (string), or tokens (array).
-    // If template is supplied, it is parsed into tokens.
     if(data.template != null) {
       this.source = data.template;
     } else if(data.tokens != null) {
@@ -50,18 +64,83 @@
       var content = '';
       for ( var i = 0; i < tokens.length; i++) {
         var token = tokens[i];
-        if (token.variable) {
-          if (!isSpecialVar(token.variable)) {
-            content += token.variable;
-          }
-        } else {
+        if (typeof token == 'string') {
           content += token;
+        } else if (token.variable) {
+          content += token.variable;
+        } else {
+          // Ignore special tokens
         }
       }
       this._content = content;
     }
     return this._content;
   };
+
+  function parseTemplate(content) {
+    var tokens = [];
+    var varParsing = false;
+    var last = null;
+    var token = '';
+    for ( var i = 0; i < content.length; i++) {
+      var current = content.charAt(i);
+      if (current == "\n") {
+        if (token != '') {
+          tokens.push(token);
+        }
+        token = '';
+        tokens.push(current);
+        last = null;
+      } else {
+        var addChar = true;
+        if (varParsing) {
+          if (current == "}") {
+            varParsing = false;
+            addChar = false;
+            if(token == 'cursor') {
+              tokens.push({
+                "cursor" : true
+              });
+            } else if(token == 'line_selection') {
+              tokens.push({
+                "line_selection" : true
+              });
+            } else {
+              tokens.push({
+                "variable" : token
+              });
+            }
+            token = '';
+          }
+        } else {
+          if (current == "$" && (i + 1) <= content.length) {
+            i++;
+            var next = content.charAt(i);
+            if (next == "{") {
+              varParsing = true;
+              addChar = false;
+              if (token != '') {
+                tokens.push(token);
+              }
+              token = '';
+            }
+          }
+
+        }
+        if (addChar && last != "$") {
+          token += current;
+          last = current;
+        } else {
+          last = null;
+        }
+      }
+    }
+    if (token != '') {
+      tokens.push(token);
+    }
+    return tokens;
+  }
+
 
   function getMarkerChanged(cm, textChanged) {
     var markers = cm.findMarksAt(textChanged.from);
@@ -142,64 +221,6 @@
     }
   }
 
-  function parseTemplate(content) {
-    var tokens = [];
-    var varParsing = false;
-    var last = null;
-    var token = '';
-    for ( var i = 0; i < content.length; i++) {
-      var current = content.charAt(i);
-      if (current == "\n") {
-        if (token != '') {
-          tokens.push(token);
-        }
-        token = '';
-        tokens.push(current);
-        last = null;
-      } else {
-        var addChar = true;
-        if (varParsing) {
-          if (current == "}") {
-            varParsing = false;
-            addChar = false;
-            tokens.push({
-              "variable" : token
-            });
-            token = '';
-          }
-        } else {
-          if (current == "$" && (i + 1) <= content.length) {
-            i++;
-            var next = content.charAt(i);
-            if (next == "{") {
-              varParsing = true;
-              addChar = false;
-              if (token != '') {
-                tokens.push(token);
-              }
-              token = '';
-            }
-          }
-
-        }
-        if (addChar && last != "$") {
-          token += current;
-          last = current;
-        } else {
-          last = null;
-        }
-      }
-    }
-    if (token != '') {
-      tokens.push(token);
-    }
-    return tokens;
-  }
-
-  function isSpecialVar(variable) {
-    return variable == 'cursor' || variable == 'line_selection';
-  }
-
   Template.prototype.insert = function(cm, data) {
     if (cm._templateState) {
       uninstall(cm);
@@ -216,25 +237,7 @@
     var cursor = null;
     for ( var i = 0; i < tokens.length; i++) {
       var token = tokens[i];
-      if (token.variable) {
-        if (!isSpecialVar(token.variable)) {
-          content += token.variable;
-          var from = Pos(line, col);
-          var to = Pos(line, col
-              + token.variable.length);
-          var selectable = variables[token.variable] != false;
-          col += token.variable.length;
-          markers.push({
-            from : from,
-            to : to,
-            variable : token.variable,
-            selectable : selectable
-          });
-          variables[token.variable] = false;
-        } else if(token.variable == 'cursor') {
-          cursor = Pos(line, col);
-        }
-      } else {
+      if(typeof token == 'string') {
         content += token;
         if (token == "\n") {
           line++;
@@ -242,6 +245,24 @@
         } else {
           col += token.length;
         }
+      } else if (token.variable) {
+        content += token.variable;
+        var from = Pos(line, col);
+        var to = Pos(line, col
+            + token.variable.length);
+        var selectable = variables[token.variable] != false;
+        col += token.variable.length;
+        markers.push({
+          from : from,
+          to : to,
+          variable : token.variable,
+          selectable : selectable
+        });
+        variables[token.variable] = false;
+      } else if(token.cursor) {
+        cursor = Pos(line, col);
+      } else {
+        // Unhandled tokens, e.g. line_selection. Ignore.
       }
     }
 

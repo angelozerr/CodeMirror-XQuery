@@ -133,9 +133,9 @@
       if (type === 'variable') {
         var token = cm.getTokenAt(cursor.to()), state = token.state;
         if ((type === 'variable' && state.currentVar)) {
-          var char = cm.getRange(cursor.to(), CodeMirror.Pos(cursor.to().line,
+          var character = cm.getRange(cursor.to(), CodeMirror.Pos(cursor.to().line,
               cursor.to().ch + 1));
-          if (char === ' ' || char === ':' || char === ',' || char === ')') {
+          if (character === ' ' || character === ':' || character === ',' || character === ')') {
             cm.setSelection(cursor.from(), cursor.to());
             return;
           }

@@ -358,7 +358,7 @@
           var completion = {
             "className" : className,
             "text" : label,
-            "template" : template,
+            "template" : template
           };
           completion.data = completion;
           completion.hint = function(cm, data, completion) {

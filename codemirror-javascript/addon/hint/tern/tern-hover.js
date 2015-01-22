@@ -17,7 +17,7 @@
   	var pos = d.pos;
   	ts.request(cm, "type", function(error, data) {
       //if (error) return showError(ts, cm, error);
- 
+        if (!data) return;
         var tip = elt("span", null, elt("strong", null, data.type || "not found"));
         if (data.doc)
           tip.appendChild(document.createTextNode(" — " + data.doc));

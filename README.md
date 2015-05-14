@@ -12,7 +12,7 @@ XQuery editor like :
  * [Context information](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Completion-Context-Information) which displays in a popup contextual infopops information (description about the function,etc) that is related to the selected completion item.
 * [Code Folding](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Code-Folding)
 
-You can play with the XQuery [online demo](http://codemirror-java.opensagres.eu.cloudbees.net/xquery.html) and see 
+You can play with the XQuery [online demo](http://demo-angelozerr.rhcloud.com/CodeMirror-Java//xquery.html) and see 
 the [XQuery Features](https://github.com/angelozerr/CodeMirror-XQuery/wiki/Features).
 
 ![SyntaxError1](https://github.com/angelozerr/CodeMirror-XQuery/wiki/images/XQueryEditor.png)

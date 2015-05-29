@@ -131,7 +131,7 @@
   CodeMirror.tern.getServer = getServer;
 
   function startsWith(str, token) {
-    return str.slice(0, token.length).toUpperCase() == token.toUpperCase();
+    return str && str.slice(0, token.length).toUpperCase() == token.toUpperCase();
   }
 
   function getText(completion) {
